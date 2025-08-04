@@ -1,0 +1,11 @@
+streamlit
+gspread
+gspread_dataframe
+oauth2client
+pandas
+numpy
+matplotlib
+altair
+scipy
+Pillow
+
