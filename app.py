@@ -16,13 +16,13 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 # Load data
-sheet = client.open("Wayfinding Performance Study Data").worksheet("Raw Data")
+sheet = client.open("Wayfinding Data").worksheet("Raw Data")
 df = get_as_dataframe(sheet, evaluate_formulas=True).dropna(how="all")
 
 # Page selector
 st.set_page_config(layout="wide")
 
-st.title("Wayfinding Performance Dashboard")
+st.title("Wayfinding Performance Study Dashboard")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
