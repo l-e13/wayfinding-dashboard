@@ -16,7 +16,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
 # Load data
-sheet = client.open("Wayfinding Data").worksheet("Raw Data")
+sheet = client.open("Wayfinding Performance Study Data").worksheet("Raw Data")
 df = get_as_dataframe(sheet, evaluate_formulas=True).dropna(how="all")
 
 # Page selector
