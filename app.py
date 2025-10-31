@@ -303,13 +303,72 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     with col1:
         bordered_container("Random Travel Distance (participant asked to estimate travel distance)", fig_random, None)
     with col2:
-        bordered_container("Pre-Determined Travel Distance (participant asked to travel 15 ft. forward)", fig_determined, None)
+        bordered_container("Pre-Determined Travel Distance (participant asked to travel 15 ft forward)", fig_determined, None)
+
 
     col3, col4 = st.columns(2)
     with col3:
-        bordered_container("Triangle Completion – Turn to Exit and Exit", fig_triangle, summary_df)
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+            ">
+                <h4 style="margin-top: 0; color: white;">Triangle Completion – Turn to Exit and Exit</h4>
+                <p style="
+                    font-size:12px;
+                    color:#f0f0f0;
+                    margin-top:-6px;
+                    margin-bottom:10px;
+                    line-height:1.3;
+                    opacity:0.85;
+                ">
+                    Participant asked to conduct a right-hand search, point to exit, then “beeline to exit.”
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if fig_triangle:
+            st.pyplot(fig_triangle, use_container_width=True)
+        if summary_df is not None:
+            st.table(summary_df.set_index("Metric"))
+
     with col4:
-        bordered_container("Turn and Veer – Turn Right, Continue Forward", fig_veer, metrics_df)
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+            ">
+                <h4 style="margin-top: 0; color: white;">Turn and Veer – Turn Right, Continue Forward</h4>
+                <p style="
+                    font-size:12px;
+                    color:#f0f0f0;
+                    margin-top:-6px;
+                    margin-bottom:10px;
+                    line-height:1.3;
+                    opacity:0.85;
+                ">
+                    Participant asked to turn right, continue straight, and indicate perceived direction of travel.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if fig_veer:
+            st.pyplot(fig_veer, use_container_width=True)
+        if metrics_df is not None:
+            st.table(metrics_df.set_index("Metric"))
+
 
 
 def plot_score_distribution_kde(group_df, member_val, value_col, label):
