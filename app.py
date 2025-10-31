@@ -816,26 +816,11 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             padding: 10px;
             margin-bottom: 20px;
         ">
-        <h4 style="margin-top: 0; color: white;">Floor Plan Heatmap – Areas Searched</h4>
+        <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmap</h4>
         """,
         unsafe_allow_html=True
     )
 
-    st.markdown(
-        """
-        <div style="
-            background-color: #0067A5;
-            color: white;
-            border: 4px #0067A5;
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 20px;
-        ">
-            <h4 style="margin-top: 0; color: white;">Floor Plan Heatmap</h4>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
 
     first_img, dup_img = draw_heatmaps_split(member_row)  # <— new function
 
