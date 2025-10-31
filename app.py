@@ -329,15 +329,17 @@ def plot_score_distribution_kde(group_df, member_val, value_col, label):
         "Label": [f"Your score: {member_val:.1f}", f"Group average: {group_mean:.1f}"],
         "Color": ["#F04923", "#0067A5"]
     })
+
     # Shaded KDE area
     kde_area = alt.Chart(kde_df).mark_area(opacity=0.3, color="#0067A5").encode(
         x="Score:Q",
-        y="Density:Q"
+        y=alt.Y("Density:Q", axis=None)
     )
+
     # KDE line
     kde_line = alt.Chart(kde_df).mark_line(color="#0067B9").encode(
         x=alt.X("Score:Q", title=label),
-        y=alt.Y("Density:Q", title="Density")
+        y=alt.Y("Density:Q", axis=None)
     )
     # Vertical lines with tooltips
     lines = alt.Chart(markers_df).mark_rule(strokeWidth=2).encode(
@@ -643,8 +645,8 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     col1, col2, col3 = st.columns(3)
     with col1:
         bordered_container(
-            "Search Rate (ft/min)",
-            plot_score_distribution_kde(group_data, search, "search_rate", "Search Rate (ft/min)"),
+            "Search Rate (sq ft/min)",
+            plot_score_distribution_kde(group_data, search, "search_rate", "Search Rate (sq ft/min)"),
             None
         )
 
