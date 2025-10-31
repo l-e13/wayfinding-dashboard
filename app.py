@@ -832,7 +832,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         st.altair_chart(bar_chart, use_container_width=True)
 
     with col2:
-        bordered_container("Load Demand Index", ldi_chart, None)
+        bordered_container("NASA Task Load Index", ldi_chart, None)
 
     
 
@@ -852,7 +852,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             st.write("**Search Delayed by Object:**", checkmark(member_row.get("delayed_object")))
             st.write("**PPE/Equip Issues:**", checkmark(member_row.get("equipment_issue")))
         with col3:
-            st.write("**Blocked by Furniture:**", checkmark(member_row.get("furniture")))
+            st.write("**Flipped/moved Furniture:**", checkmark(member_row.get("furniture")))
 
         notes = member_row.get('add_observations', "")
         if notes and str(notes).strip():
