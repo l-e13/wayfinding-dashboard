@@ -650,12 +650,37 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             None
         )
 
+
     with col2:
-        bordered_container(
-            "Adjusted Score",
-            plot_score_distribution_kde(group_data, adjusted, "adjusted_score", "Adjusted Score"),
-            None
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+            ">
+                <h4 style="margin-top: 0; color: white;">Adjusted Score</h4>
+                <p style="
+                    font-size:12px;
+                    color:#f0f0f0;
+                    margin-top:-6px;
+                    margin-bottom:10px;
+                    opacity:0.85;
+                ">
+                    Search Rate × % of area covered on initial search
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+        st.altair_chart(
+            plot_score_distribution_kde(group_data, adjusted, "adjusted_score", "Adjusted Score"),
+            use_container_width=True
+        )
+
 
     with col3:
         bordered_container(
