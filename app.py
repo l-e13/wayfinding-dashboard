@@ -802,7 +802,35 @@ def show_search_metrics(df, member_id=None, group_choice=None):
 
     col1, col2 = st.columns(2)
     with col1:
-        bordered_container("Time to Bed", bar_chart, None)
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+            ">
+                <h4 style="margin-top: 0; color: white;">Time to Bed</h4>
+                <p style="
+                    font-size:12px;
+                    color:#f0f0f0;
+                    margin-top:-6px;
+                    margin-bottom:10px;
+                    line-height:1.3;
+                    opacity:0.85;
+                ">
+                    Times are from start of search to 1st bed located, 2nd bed located, etc., not B1/B2/B3 from map above.
+                    There will be a “time to bed” for each bed touched, even if it was not adequately searched.
+                    “Time Called” is from the start of evolution to the time the participant indicated search was complete.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.altair_chart(bar_chart, use_container_width=True)
+
     with col2:
         bordered_container("Load Demand Index", ldi_chart, None)
 
