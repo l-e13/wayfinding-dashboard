@@ -299,12 +299,6 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     })
 
     #### Layout ####
-    col1, col2 = st.columns(2)
-    with col1:
-        bordered_container("Random Travel Distance (participant asked to estimate travel distance)", fig_random, None)
-    with col2:
-        bordered_container("Pre-Determined Travel Distance (participant asked to travel 15 ft forward)", fig_determined, None)
-
 
     col1, col2 = st.columns(2)
     with col1:
@@ -697,7 +691,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         <p style="margin:0; font-size:16px;">Bed Quadrants Searched</p>
         <p style="
             margin:6px 12px 0;
-            font-size:11px;
+            font-size:13px;
             line-height:1.2;
             color: #f0f0f0;
             opacity:0.8;
@@ -782,7 +776,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             ">
                 <h4 style="margin-top: 0; color: white;">Adjusted Score</h4>
                 <p style="
-                    font-size:12px;
+                    font-size:16px;
                     color:#f0f0f0;
                     margin-top:-6px;
                     margin-bottom:10px;
@@ -932,7 +926,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             ">
                 <h4 style="margin-top: 0; color: white;">Time to Bed</h4>
                 <p style="
-                    font-size:12px;
+                    font-size:16px;
                     color:#f0f0f0;
                     margin-top:-6px;
                     margin-bottom:10px;
