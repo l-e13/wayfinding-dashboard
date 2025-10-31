@@ -626,13 +626,13 @@ def show_search_metrics(df, member_id=None, group_choice=None):
 
     search = member_row['search_rate']
     adjusted = member_row['adjusted_score']
-    weighted = member_row['weighted_score']
+    # weighted = member_row['weighted_score']
 
 
 
     search_avg = group_data['search_rate'].mean()
     adjusted_avg = group_data['adjusted_score'].mean()
-    weighted_avg = group_data['weighted_score'].mean()
+    # weighted_avg = group_data['weighted_score'].mean()
 
     
     # Get shared x-axis limits for consistent plot sizes
@@ -642,7 +642,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         'weighted_score': (group_data['weighted_score'].min(), group_data['weighted_score'].max())
     }
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         bordered_container(
             "Search Rate (sq ft/min)",
@@ -679,14 +679,6 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         st.altair_chart(
             plot_score_distribution_kde(group_data, adjusted, "adjusted_score", "Adjusted Score"),
             use_container_width=True
-        )
-
-
-    with col3:
-        bordered_container(
-            "Weighted Score",
-            plot_score_distribution_kde(group_data, weighted, "weighted_score", "Weighted Score"),
-            None
         )
 
         # Create a blank figure to pass into the bordered container
