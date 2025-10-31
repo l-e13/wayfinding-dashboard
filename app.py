@@ -852,7 +852,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             st.write("**Search Delayed by Object:**", checkmark(member_row.get("delayed_object")))
             st.write("**PPE/Equip Issues:**", checkmark(member_row.get("equipment_issue")))
         with col3:
-            st.write("**Flipped/moved Furniture:**", checkmark(member_row.get("furniture")))
+            st.write("**Flipped/Moved Furniture:**", checkmark(member_row.get("furniture")))
 
         notes = member_row.get('add_observations', "")
         if notes and str(notes).strip():
@@ -868,7 +868,23 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
 
     st.markdown("---")
 
-    st.markdown("## Task Performance")
+    st.markdown(
+    """
+    <h2 style="margin-bottom:0;">Task Performance</h2>
+    <p style="
+        font-size:14px;
+        color:#555;
+        margin-top:4px;
+        line-height:1.4;
+        max-width:900px;
+    ">
+        These tasks are typical of the kind of tests administered in Dr. Philbeck’s Movement Laboratory.
+        We are interested in comparing how the firefighter population performs versus the general population.
+    </p>
+    """,
+    unsafe_allow_html=True
+)
+
     show_task_metrics(df, member_id=member_id, group_choice=group_choice)
 
 
