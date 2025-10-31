@@ -825,12 +825,12 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     first_img, dup_img = draw_heatmaps_split(member_row)  # <— new function
 
     if first_img is not None:
-        st.image(first_img, caption="First pass — areas searched (light red)", use_column_width=True)
+        st.image(first_img, caption="First pass — areas searched (light red)", use_container_width=True)
     else:
         st.warning("Floor plan image not found.")
 
     if dup_img is not None:
-        st.image(dup_img, caption="Second pass — duplicated areas (dark red)", use_column_width=True)
+        st.image(dup_img, caption="Second pass — duplicated areas (dark red)", use_container_width=True)
 
 
     # End the bordered container
