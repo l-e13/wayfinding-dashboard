@@ -575,6 +575,9 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     ">
         <h2 style="margin:0; font-size:50px; color:white; ">{searched}/12</h2>
         <p style="margin:0; font-size:16px;">Bed Quadrants Searched</p>
+        <p style="margin:6px 12px 0; font-size:13px; line-height:1.3;">
+        Each bed was divided into 4 equal parts. You received credit for each quadrant that was adequately searched.
+        </p>
     </div>
 
     <!-- Card 2 -->
