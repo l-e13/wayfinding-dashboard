@@ -55,7 +55,7 @@ def create_arrow_chart_spaced(member_est, compare_avg, actuals):
                 "Start": position,
                 "End": position + val,
                 "LabelPos": position + val / 2,
-                "Label": f"{int(round(val))}",
+                "Label": f"{int(round(val))} ft",
                 "Color": color,
                 "Trial": trial
             })
@@ -926,7 +926,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             ">
                 <h4 style="margin-top: 0; color: white;">Time to Bed</h4>
                 <p style="
-                    font-size:16px;
+                    font-size:14px;
                     color:#f0f0f0;
                     margin-top:-6px;
                     margin-bottom:10px;
