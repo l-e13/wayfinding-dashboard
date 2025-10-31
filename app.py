@@ -301,7 +301,7 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     #### Layout ####
     col1, col2 = st.columns(2)
     with col1:
-        bordered_container("Random Distance – Stop, how far have you traveled?", fig_random, None)
+        bordered_container("Random Travel Distance (ft)- participant asked to estimate travel distance", fig_random, None)
     with col2:
         bordered_container("Determined Distance – Travel 15ft", fig_determined, None)
 
@@ -872,7 +872,7 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
     """
     <h2 style="margin-bottom:0;">Task Performance</h2>
     <p style="
-        font-size:14px;
+        font-size:16px;
         color:#555;
         margin-top:4px;
         line-height:1.4;
