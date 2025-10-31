@@ -306,6 +306,65 @@ def show_task_metrics(df, member_id=None, group_choice=None):
         bordered_container("Pre-Determined Travel Distance (participant asked to travel 15 ft forward)", fig_determined, None)
 
 
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+            ">
+                <h4 style="margin-top: 0; color: white;">Random Travel Distance</h4>
+                <p style="
+                    font-size:16px;
+                    color:#f0f0f0;
+                    margin-top:-6px;
+                    margin-bottom:10px;
+                    line-height:1.3;
+                    opacity:0.85;
+                ">
+                    Participant asked to estimate travel distance
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if fig_random:
+            st.altair_chart(fig_random, use_container_width=True)
+
+    with col2:
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 20px;
+            ">
+                <h4 style="margin-top: 0; color: white;">Pre-Determined Travel Distance</h4>
+                <p style="
+                    font-size:16px;
+                    color:#f0f0f0;
+                    margin-top:-6px;
+                    margin-bottom:10px;
+                    line-height:1.3;
+                    opacity:0.85;
+                ">
+                    Participant asked to travel 15 ft. forward
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if fig_determined:
+            st.altair_chart(fig_determined, use_container_width=True)
+
     col3, col4 = st.columns(2)
     with col3:
         st.markdown(
@@ -318,9 +377,9 @@ def show_task_metrics(df, member_id=None, group_choice=None):
                 padding: 10px;
                 margin-bottom: 20px;
             ">
-                <h4 style="margin-top: 0; color: white;">Triangle Completion – Turn to Exit and Exit</h4>
+                <h4 style="margin-top: 0; color: white;">Triangle Completion Task</h4>
                 <p style="
-                    font-size:12px;
+                    font-size:16px;
                     color:#f0f0f0;
                     margin-top:-6px;
                     margin-bottom:10px;
@@ -349,16 +408,16 @@ def show_task_metrics(df, member_id=None, group_choice=None):
                 padding: 10px;
                 margin-bottom: 20px;
             ">
-                <h4 style="margin-top: 0; color: white;">Turn and Veer – Turn Right, Continue Forward</h4>
+                <h4 style="margin-top: 0; color: white;">Turn Direction and Veer Task</h4>
                 <p style="
-                    font-size:12px;
+                    font-size:16px;
                     color:#f0f0f0;
                     margin-top:-6px;
                     margin-bottom:10px;
                     line-height:1.3;
                     opacity:0.85;
                 ">
-                    Participant asked to turn right, continue straight, and indicate perceived direction of travel.
+                    Participant asked to travel forward, stop, turn 90 degrees, then continue forward
                 </p>
             </div>
             """,
