@@ -301,9 +301,9 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     #### Layout ####
     col1, col2 = st.columns(2)
     with col1:
-        bordered_container("Random Travel Distance (ft)- participant asked to estimate travel distance", fig_random, None)
+        bordered_container("Random Travel Distance (participant asked to estimate travel distance)", fig_random, None)
     with col2:
-        bordered_container("Determined Distance – Travel 15ft", fig_determined, None)
+        bordered_container("Pre-Determined Travel Distance (participant asked to travel 15 ft. forward)", fig_determined, None)
 
     col3, col4 = st.columns(2)
     with col3:
