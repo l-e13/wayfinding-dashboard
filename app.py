@@ -821,7 +821,6 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         unsafe_allow_html=True
     )
 
-        # Header box (keeps your blue style)
     st.markdown(
         """
         <div style="
@@ -833,9 +832,6 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             margin-bottom: 20px;
         ">
             <h4 style="margin-top: 0; color: white;">Floor Plan Heatmap</h4>
-            <p style="font-size:12px; color:#f0f0f0; margin-top:-6px; margin-bottom:10px; opacity:0.85;">
-                Top: first pass (areas searched). Bottom: duplicated areas only.
-            </p>
         </div>
         """,
         unsafe_allow_html=True
