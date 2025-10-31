@@ -876,7 +876,7 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
         color:#555;
         margin-top:4px;
         line-height:1.4;
-        max-width:900px;
+        max-width:1200px;
     ">
         These tasks are typical of the kind of tests administered in Dr. Philbeck’s Movement Laboratory.
         We are interested in comparing how the firefighter population performs versus the general population.
