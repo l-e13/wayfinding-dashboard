@@ -23,6 +23,7 @@ df = get_as_dataframe(sheet, evaluate_formulas=True).dropna(how="all")
 st.set_page_config(layout="wide")
 
 st.title("Wayfinding Performance Study Dashboard")
+st.subheader("Initial Assessment")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
