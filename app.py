@@ -539,13 +539,19 @@ def plot_interactive_distribution(group_df, member_val, value_col, label):
 
 
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, UnidentifiedImageError
 
-def draw_heatmap(member_row, image_path='Floor Plan New.jpg'):
-    img = Image.open(image_path).convert("RGBA")
-    overlay = Image.new("RGBA", img.size, (255, 0, 0, 0))
-    draw = ImageDraw.Draw(overlay)
+def draw_heatmaps_split(member_row, image_path="Floor Plan New.jpg"):
+    try:
+        base_img = Image.open(image_path).convert("RGBA")
+    except (FileNotFoundError, UnidentifiedImageError):
+        return None, None
 
+    # two transparent overlays
+    overlay_first = Image.new("RGBA", base_img.size, (255, 0, 0, 0))
+    overlay_dup   = Image.new("RGBA", base_img.size, (255, 0, 0, 0))
+    d1 = ImageDraw.Draw(overlay_first)
+    d2 = ImageDraw.Draw(overlay_dup)
     zone_coords = {
         "r1_b1a": (132, 270, 52, 77),  # rectangle
         "r1_b1b": (185, 269, 51, 78),
@@ -621,31 +627,33 @@ def draw_heatmap(member_row, image_path='Floor Plan New.jpg'):
         "r6_f6": (923, 257, 40, 171),
         "r6_f7": (923, 209, 72, 46)
         }
+    
 
     for col_name, coords in zone_coords.items():
         base_val = member_row.get(col_name, 0)
-        dup_val = member_row.get(f"dup_{col_name}", 0)
+        dup_val  = member_row.get(f"dup_{col_name}", 0)
 
-        # First visit: lighter red
+        # First pass (light red)
         if pd.notna(base_val) and base_val != 0:
             if isinstance(coords, tuple):
                 x, y, w, h = coords
-                draw.rectangle([x, y, x + w, y + h], fill=(255, 0, 0, 100))  # light red
-            elif isinstance(coords, list):
-                draw.polygon(coords, fill=(255, 0, 0, 100))
+                d1.rectangle([x, y, x + w, y + h], fill=(255, 0, 0, 100))
+            else:
+                d1.polygon(coords, fill=(255, 0, 0, 100))
 
-        # Duplicate visit: add darker red overlay
+        # Duplicates only (dark red)
         if pd.notna(dup_val) and dup_val != 0:
             if isinstance(coords, tuple):
                 x, y, w, h = coords
-                draw.rectangle([x, y, x + w, y + h], fill=(139, 0, 0, 160))  # dark red
-            elif isinstance(coords, list):
-                draw.polygon(coords, fill=(139, 0, 0, 160))  # dark red
+                d2.rectangle([x, y, x + w, y + h], fill=(139, 0, 0, 160))
+            else:
+                d2.polygon(coords, fill=(139, 0, 0, 160))
 
-    combined = Image.alpha_composite(img, overlay)
-    return combined
+    first_pass_img = Image.alpha_composite(base_img, overlay_first)
+    duplicate_img  = Image.alpha_composite(base_img, overlay_dup)
+    return first_pass_img, duplicate_img
 
-
+    
 
 def show_search_metrics(df, member_id=None, group_choice=None):
 
@@ -813,8 +821,36 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         unsafe_allow_html=True
     )
 
-    # Show the image inside the bordered box
-    st.image(draw_heatmap(member_row), caption="Light red = Searched | Dark red = Duplicated", use_column_width=True)
+        # Header box (keeps your blue style)
+    st.markdown(
+        """
+        <div style="
+            background-color: #0067A5;
+            color: white;
+            border: 4px #0067A5;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+        ">
+            <h4 style="margin-top: 0; color: white;">Floor Plan Heatmap</h4>
+            <p style="font-size:12px; color:#f0f0f0; margin-top:-6px; margin-bottom:10px; opacity:0.85;">
+                Top: first pass (areas searched). Bottom: duplicated areas only.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    first_img, dup_img = draw_heatmaps_split(member_row)  # <— new function
+
+    if first_img is not None:
+        st.image(first_img, caption="First pass — areas searched (light red)", use_column_width=True)
+    else:
+        st.warning("Floor plan image not found.")
+
+    if dup_img is not None:
+        st.image(dup_img, caption="Second pass — duplicated areas (dark red)", use_column_width=True)
+
 
     # End the bordered container
     st.markdown("</div>", unsafe_allow_html=True)
