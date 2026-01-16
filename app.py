@@ -18,6 +18,11 @@ client = gspread.authorize(creds)
 # Load data
 sheet = client.open("Wayfinding Data").worksheet("Raw Data")
 df = get_as_dataframe(sheet, evaluate_formulas=True).dropna(how="all")
+df["id"] = (
+    pd.to_numeric(df["id"], errors="coerce")
+      .astype("Int64")   # pandas nullable integer
+)
+
 
 # Page selector
 st.set_page_config(layout="wide")
