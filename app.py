@@ -30,22 +30,16 @@ df_r2 = load_sheet("Wayfinding Data", "Round 2")
 df = df_r1.merge(df_r2, on="id", how="left", suffixes=("", "_rd2dup"))
 
 
-st.markdown("### Debug: Data Merge Check")
+test_id = df["id"].dropna().iloc[0]
 
-st.write("Total columns:", len(df.columns))
+st.markdown(f"### Debug: Round 2 values for ID {test_id}")
 
-expected_r2_cols = [
-    "rd2_total_ft_searched",
-    "rd2_total_perc_searched",
-    "rd2_r1_f1",
-    "rd2_r7_f9"
-]
+st.write(
+    df[df["id"] == test_id][
+        ["id", "rd2_total_ft_searched", "rd2_total_perc_searched"]
+    ]
+)
 
-found = [c for c in expected_r2_cols if c in df.columns]
-missing = [c for c in expected_r2_cols if c not in df.columns]
-
-st.write("Found Round 2 columns:", found)
-st.write("Missing Round 2 columns:", missing)
 
 
 # Page selector
