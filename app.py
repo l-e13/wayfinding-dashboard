@@ -754,7 +754,7 @@ def draw_heatmaps_split(member_row, image_path="Floor Plan New.jpg"):
     duplicate_img  = Image.alpha_composite(base_img, overlay_dup)
     return first_pass_img, duplicate_img
 
-def draw_heatmap_single(member_row, zone_coords, image_path, fill=(255, 0, 0, 110)):
+def draw_heatmap_single(member_row, zone_coords, image_path, fill=(255, 0, 0, 100)):
     """
     Single-overlay heatmap (for Round 2).
     zone_coords values can be:
@@ -977,7 +977,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             member_row,
             ZONE_COORDS_R2,
             image_path=ROUND2_IMG,
-            fill=(255, 0, 0, 110)
+            fill=(255, 0, 0, 100)
         )
         if r2_img is not None:
             st.image(r2_img, caption="Round 2 — areas searched", use_container_width=True)
