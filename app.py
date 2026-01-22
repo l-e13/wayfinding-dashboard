@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import altair as alt
 from scipy.stats import gaussian_kde
+from PIL import Image, ImageDraw, UnidentifiedImageError
 import json
 
 # Setup Google Sheets API credentials
@@ -29,17 +30,8 @@ df_r2 = load_sheet("Wayfinding Data", "Round 2")
 # Merge into one table: one row per participant id
 df = df_r1.merge(df_r2, on="id", how="left", suffixes=("", "_rd2dup"))
 
-
-test_id = df["id"].dropna().iloc[0]
-
-st.markdown(f"### Debug: Round 2 values for ID {test_id}")
-
-st.write(
-    df[df["id"] == test_id][
-        ["id", "rd2_total_ft_searched", "rd2_total_perc_searched"]
-    ]
-)
-
+ROUND1_IMG = "Floor Plan New.jpg"
+ROUND2_IMG = "Round 2 floor plan.png" 
 
 
 # Page selector
@@ -564,7 +556,91 @@ def plot_interactive_distribution(group_df, member_val, value_col, label):
 
 
 
-from PIL import Image, ImageDraw, UnidentifiedImageError
+ZONE_COORDS_R2 = {
+    # --- Room 1 ---
+    "rd2_r1_b1a": (117, 256, 49, 71),
+    "rd2_r1_b1b": (166, 255, 49, 72),
+    "rd2_r1_b1c": (166, 328, 50, 71),
+    "rd2_r1_b1d": (117, 327, 49, 72),
+    "rd2_r1_c1":  (73, 38, 61, 119),
+    "rd2_r1_c2":  [(141, 114), (163, 92), (190, 118), (167, 140)],
+    "rd2_r1_c3":  [(170, 84), (198, 59), (223, 82), (194, 110)],
+    "rd2_r1_c6":  (282, 357, 46, 43),
+    "rd2_r1_f1":  [(135, 34), (203, 34), (159, 76), (181, 98), (176, 105), (161, 89), (135, 116)],
+    "rd2_r1_f2":  [(49, 181), (51, 201), (196, 201), (196, 114), (182, 99), (176, 105),
+                   (189, 117), (167, 141), (140, 114), (134, 117), (134, 181)],
+    "rd2_r1_f3":  [(350, 126), (350, 175), (348, 127), (247, 127), (247, 80), (247, 35),
+                   (205, 34), (248, 77), (204, 119), (197, 115), (197, 201), (303, 202),
+                   (304, 194), (342, 195), (344, 203)],
+    "rd2_r1_f4":  (197, 202, 107, 53),
+    "rd2_r1_f5":  (216, 255, 88, 101),
+    "rd2_r1_f6":  [(304, 255), (346, 255), (346, 295), (351, 295), (350, 344), (345, 344),
+                   (346, 356), (304, 356)],
+    "rd2_r1_f7":  (216, 355, 65, 47),
+    "rd2_r1_f8":  [(49, 256), (49, 374), (103, 374), (104, 400), (116, 400), (116, 256)],
+    "rd2_r1_f9":  (50, 202, 146, 53),
+
+    # --- Room 2 ---
+    "rd2_r2_c4": (380, 164, 130, 34),
+    "rd2_r2_f1": (450, 35, 95, 83),
+    "rd2_r2_f2": [(449, 117), (544, 118), (545, 130), (550, 127), (550, 178), (545, 179),
+                  (545, 202), (511, 201), (510, 163), (449, 163)],
+    "rd2_r2_f3": [(356, 119), (448, 118), (448, 163), (380, 163), (380, 201), (356, 201),
+                  (355, 179), (351, 178), (350, 131), (355, 132)],
+
+    # --- Room 3 ---
+    "rd2_r3_t1": (427, 349, 112, 48),
+    "rd2_r3_f1": [(471, 274), (433, 274), (432, 211), (407, 211), (407, 246), (368, 246),
+                  (367, 211), (356, 211), (355, 292), (350, 293), (350, 342), (356, 342),
+                  (426, 342), (471, 342)],
+    "rd2_r3_f2": (471, 316, 74, 26),
+    "rd2_r3_f3": (356, 343, 64, 59),
+
+    # --- Room 4 ---
+    "rd2_r4_s1": (555, 35, 78, 84),
+    "rd2_r4_f1": [(653, 34), (638, 35), (636, 118), (644, 118), (645, 122), (695, 122),
+                  (696, 118), (722, 118), (722, 34), (705, 33), (706, 72), (653, 72)],
+    "rd2_r4_f2": (722, 35, 65, 25),
+    "rd2_r4_f3": (722, 92, 66, 26),
+
+    # --- Room 5 ---
+    "rd2_r5_f1": [(551, 127), (645, 127), (645, 122), (696, 122), (696, 127), (696, 202),
+                  (554, 202), (554, 179), (550, 178)],
+    "rd2_r5_f2": [(699, 128), (844, 127), (844, 178), (839, 177), (840, 202), (766, 201),
+                  (765, 205), (714, 205), (714, 201), (697, 201)],
+
+    # --- Room 6 ---
+    "rd2_r6_b2a": (687, 292, 74, 53),
+    "rd2_r6_b2b": (762, 292, 73, 54),
+    "rd2_r6_b2c": (762, 347, 73, 52),
+    "rd2_r6_b2d": (687, 346, 74, 53),
+    "rd2_r6_cl2": [(481, 211), (545, 211), (544, 237), (553, 235), (554, 285), (544, 284),
+                   (545, 307), (481, 308)],
+    "rd2_r6_f1": [(555, 212), (695, 211), (695, 292), (686, 291), (686, 308), (554, 307)],
+    "rd2_r6_f2": [(696, 210), (712, 210), (714, 205), (765, 205), (764, 292), (696, 291)],
+    "rd2_r6_f3": (765, 210, 73, 82),
+    "rd2_r6_f4": [(555, 308), (686, 309), (686, 403), (595, 402), (595, 327), (554, 329)],
+
+    # --- Room 7 ---
+    "rd2_r7_b3a": (851, 256, 79, 52),
+    "rd2_r7_b3b": (932, 256, 81, 53),
+    "rd2_r7_b3c": (931, 309, 81, 54),
+    "rd2_r7_b3d": (851, 309, 79, 54),
+    "rd2_r7_c5":  (1022, 136, 36, 47),
+    "rd2_r7_cl1": [(797, 35), (838, 36), (838, 61), (847, 63), (848, 113), (839, 114),
+                   (838, 118), (797, 118)],
+    "rd2_r7_f1":  [(848, 83), (969, 83), (970, 202), (848, 201), (847, 179), (845, 179),
+                   (844, 127), (848, 127)],
+    "rd2_r7_f2":  (848, 35, 59, 48),
+    "rd2_r7_f3":  (1022, 36, 69, 81),
+    "rd2_r7_f4":  (970, 84, 50, 118),
+    "rd2_r7_f5":  (970, 203, 119, 51),
+    "rd2_r7_f6":  (1013, 254, 35, 148),
+    "rd2_r7_f7":  (1048, 339, 43, 64),
+    "rd2_r7_f8":  (848, 364, 164, 39),
+    "rd2_r7_f9":  [(848, 211), (847, 255), (970, 254), (969, 203), (898, 202), (898, 211)],
+}
+
 
 def draw_heatmaps_split(member_row, image_path="Floor Plan New.jpg"):
     try:
@@ -678,7 +754,32 @@ def draw_heatmaps_split(member_row, image_path="Floor Plan New.jpg"):
     duplicate_img  = Image.alpha_composite(base_img, overlay_dup)
     return first_pass_img, duplicate_img
 
-    
+def draw_heatmap_single(member_row, zone_coords, image_path, fill=(255, 0, 0, 110)):
+    """
+    Single-overlay heatmap (for Round 2).
+    zone_coords values can be:
+      - rect: (x, y, w, h)
+      - poly: [(x1,y1), (x2,y2), ...]
+    """
+    try:
+        base_img = Image.open(image_path).convert("RGBA")
+    except (FileNotFoundError, UnidentifiedImageError):
+        return None
+
+    overlay = Image.new("RGBA", base_img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+
+    for col_name, coords in zone_coords.items():
+        val = member_row.get(col_name, 0)
+        if pd.notna(val) and val != 0:
+            if isinstance(coords, tuple):
+                x, y, w, h = coords
+                d.rectangle([x, y, x + w, y + h], fill=fill)
+            else:
+                d.polygon(coords, fill=fill)
+
+    return Image.alpha_composite(base_img, overlay)
+
 
 def show_search_metrics(df, member_id=None, group_choice=None):
 
@@ -698,6 +799,17 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         return
 
     member_row = member_row.iloc[0]
+
+    ## debugger####
+    with st.expander("Debug Round 2", expanded=False):
+        st.write("Round 2 cols present in df:", any(c.startswith("rd2_") for c in df.columns))
+        st.write("Example rd2 columns:", [c for c in df.columns if c.startswith("rd2_")][:10])
+        st.write(
+            "Participant rd2 nonzero zones:",
+            [k for k in ZONE_COORDS_R2.keys()
+            if pd.to_numeric(member_row.get(k, 0), errors="coerce") not in [0, None, np.nan]][:20]
+        )
+
 
     # Values
     searched = int(member_row['bed_quadrants_searched'])
@@ -830,36 +942,50 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     fig, ax = plt.subplots(figsize=(1, 1))
     ax.axis("off")  # Hide everything
 
-    # Custom bordered container
     st.markdown(
-        f"""
-        <div style="
-            background-color: #0067A5;
-            color: white;
-            border: 4px #0067A5;
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 20px;
-        ">
-        <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmap</h4>
-        """,
-        unsafe_allow_html=True
-    )
+    """
+    <div style="
+        background-color: #0067A5;
+        color: white;
+        border: 4px #0067A5;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 20px;
+    ">
+    <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmaps</h4>
+    """,
+    unsafe_allow_html=True
+)
 
+    colA, colB = st.columns(2)
 
-    first_img, dup_img = draw_heatmaps_split(member_row)  # <— new function
+    with colA:
+        st.markdown("**Round 1**")
+        first_img, dup_img = draw_heatmaps_split(member_row, image_path=ROUND1_IMG)
 
-    if first_img is not None:
-        st.image(first_img, caption="First pass — areas searched (light red)", use_container_width=True)
-    else:
-        st.warning("Floor plan image not found.")
+        if first_img is not None:
+            st.image(first_img, caption="Round 1 — areas searched (light red)", use_container_width=True)
+        else:
+            st.warning("Round 1 floor plan image not found.")
 
-    if dup_img is not None:
-        st.image(dup_img, caption="Second pass — duplicated areas (dark red)", use_container_width=True)
+        if dup_img is not None:
+            st.image(dup_img, caption="Round 1 — duplicated areas (dark red)", use_container_width=True)
 
+    with colB:
+        st.markdown("**Round 2**")
+        r2_img = draw_heatmap_single(
+            member_row,
+            ZONE_COORDS_R2,
+            image_path=ROUND2_IMG,
+            fill=(255, 0, 0, 110)
+        )
+        if r2_img is not None:
+            st.image(r2_img, caption="Round 2 — areas searched", use_container_width=True)
+        else:
+            st.warning("Round 2 floor plan image not found.")
 
-    # End the bordered container
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
