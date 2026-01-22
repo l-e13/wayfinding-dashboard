@@ -15,13 +15,37 @@ creds_dict = st.secrets["google_sheets"]
 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 client = gspread.authorize(creds)
 
-# Load data
-sheet = client.open("Wayfinding Data").worksheet("Raw Data")
-df = get_as_dataframe(sheet, evaluate_formulas=True).dropna(how="all")
-df["id"] = (
-    pd.to_numeric(df["id"], errors="coerce")
-      .astype("Int64")   # pandas nullable integer
-)
+# --- Load data (Round 1 + Round 2) ---
+@st.cache_data(ttl=3600)
+def load_sheet(spreadsheet_name: str, worksheet_name: str) -> pd.DataFrame:
+    ws = client.open(spreadsheet_name).worksheet(worksheet_name)
+    d = get_as_dataframe(ws, evaluate_formulas=True).dropna(how="all")
+    d["id"] = pd.to_numeric(d["id"], errors="coerce").astype("Int64")
+    return d
+
+df_r1 = load_sheet("Wayfinding Data", "Raw Data")
+df_r2 = load_sheet("Wayfinding Data", "Round 2")
+
+# Merge into one table: one row per participant id
+df = df_r1.merge(df_r2, on="id", how="left", suffixes=("", "_rd2dup"))
+
+
+st.markdown("### Debug: Data Merge Check")
+
+st.write("Total columns:", len(df.columns))
+
+expected_r2_cols = [
+    "rd2_total_ft_searched",
+    "rd2_total_perc_searched",
+    "rd2_r1_f1",
+    "rd2_r7_f9"
+]
+
+found = [c for c in expected_r2_cols if c in df.columns]
+missing = [c for c in expected_r2_cols if c not in df.columns]
+
+st.write("Found Round 2 columns:", found)
+st.write("Missing Round 2 columns:", missing)
 
 
 # Page selector
@@ -494,6 +518,8 @@ def calculate_metrics(df):
     df['weighted_score'] = df['adjusted_score'] * (0.9 ** (12 - df['bed_quadrants_searched']))
     df['percent_beds_searched'] = df['bed_quadrants_searched'] / 12 * 100
     return df
+
+
 
 def get_group_data(df, group_choice):
     group_choice = str(group_choice).strip()
