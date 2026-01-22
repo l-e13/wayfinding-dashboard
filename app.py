@@ -957,7 +957,8 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     unsafe_allow_html=True
 )
 
-    colA, colB = st.columns(2)
+    colA, colB = st.columns([1.4, 1.4])
+
 
     with colA:
         st.markdown("**Round 1**")
