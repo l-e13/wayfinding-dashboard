@@ -344,7 +344,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
     # --- Task 3: Random Distance ---
     with col1:
-        blue_task_header("Task 3 — Random Distance", "Randomly selected distances (3 trials).")
+        blue_task_header("Random Travel Distance (participant asked to estimate travel distance)")
 
         t3_cols = [pick_col("t3_s1_de", "rd2_t3_s1_de", is_r2),
                    pick_col("t3_s2_de", "rd2_t3_s2_de", is_r2),
@@ -363,7 +363,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
     # --- Task 4: Pre-Determined Distance ---
     with col2:
-        blue_task_header("Task 4 — Pre-Determined Distance", "Fixed distances (3 trials).")
+        blue_task_header("Pre-Determined Travel Distance (participant asked to travel 15 ft. forward)")
 
         t4_cols = [pick_col("t4_s1_ad", "rd2_t4_s1_ad", is_r2),
                    pick_col("t4_s2_ad", "rd2_t4_s2_ad", is_r2),
@@ -380,19 +380,12 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
                 use_container_width=True
             )
 
-    # -----------------------------
-    # Task 5 & 6 headers + visuals
-    # -----------------------------
-    blue_task_header(
-        "Task 5 & 6 — Orientation & Veer",
-        "Visualizes your bearing angle vs ideal and group average, plus timing and summary tables."
-    )
 
     col3, col4 = st.columns(2)
 
     # --- Task 5: Triangle Completion ---
     with col3:
-        blue_task_header("Task 5 — Triangle Completion", "Bearing + intersection angle with outbound/return timing.")
+        blue_task_header("Triangle Completion Task (participant asked to conduct a right-hand search, point to exit; then “beeline to exit”)")
 
         t5_time_out = pick_col("t5_time_outbd", "rd2_t5_time_outbd", is_r2)
         t5_time_ret = pick_col("t5_time_rtrn", "rd2_t5_time_rtrn", is_r2)
@@ -461,7 +454,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
         # --- Task 6: Turn Direction and Veer ---
     with col4:
-        blue_task_header("Task 6 — Turn Direction & Veer", "Bearing angle + task time compared to ideal and group average.")
+        blue_task_header("Turn Direction and Veer Task (participant asked to travel forward, stop, turn 90 degrees, then continue forward)")
 
         t6_angle = pick_col("t6_brng_angl", "rd2_t6_brng_angl", is_r2)
         t6_time  = pick_col("t6_tot", "rd2_t6_tot", is_r2)
