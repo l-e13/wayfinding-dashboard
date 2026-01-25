@@ -1057,6 +1057,40 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+    # ---- Notes (toggle matches section round) ----
+    with st.expander("Notes", expanded=True):
+        st.markdown("### Notes & Observations")
+
+        def checkmark(val):
+            return "✅ Yes" if str(val).strip().lower() == "yes" else "❌ No"
+
+        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", is_r2)
+        disoriented_col  = pick_col("disoriented", "rd2_disoriented", is_r2)
+        tool_col         = pick_col("tool", "rd2_tool", is_r2)
+        duplicate_col    = pick_col("duplicate", "rd2_duplicate", is_r2)
+        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", is_r2)
+        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", is_r2)
+        furniture_col    = pick_col("furniture", "rd2_furniture", is_r2)
+        notes_col        = pick_col("add_observations", "rd2_add_observations", is_r2)
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.write("**Missed Rooms:**", checkmark(member_row.get(missed_rooms_col)))
+            st.write("**Disoriented:**", checkmark(member_row.get(disoriented_col)))
+            st.write("**Swept with Tool:**", checkmark(member_row.get(tool_col)))
+        with col2:
+            st.write("**Duplicate Rooms:**", checkmark(member_row.get(duplicate_col)))
+            st.write("**Search Delayed by Object:**", checkmark(member_row.get(delayed_col)))
+            st.write("**PPE/Equip Issues:**", checkmark(member_row.get(equip_col)))
+        with col3:
+            st.write("**Flipped/Moved Furniture:**", checkmark(member_row.get(furniture_col)))
+
+        notes = member_row.get(notes_col, "")
+        if notes and str(notes).strip():
+            st.markdown("**Additional Observations:**")
+            st.write(notes)
+
+
     # ---- Time to Bed (Round 1 only; Round 2 does not collect these fields) ----
     if not is_r2:
         bed_metrics = {
@@ -1116,38 +1150,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         st.altair_chart(bar_chart, use_container_width=True)
 
 
-    # ---- Notes (toggle matches section round) ----
-    with st.expander("Notes", expanded=True):
-        st.markdown("### Notes & Observations")
-
-        def checkmark(val):
-            return "✅ Yes" if str(val).strip().lower() == "yes" else "❌ No"
-
-        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", is_r2)
-        disoriented_col  = pick_col("disoriented", "rd2_disoriented", is_r2)
-        tool_col         = pick_col("tool", "rd2_tool", is_r2)
-        duplicate_col    = pick_col("duplicate", "rd2_duplicate", is_r2)
-        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", is_r2)
-        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", is_r2)
-        furniture_col    = pick_col("furniture", "rd2_furniture", is_r2)
-        notes_col        = pick_col("add_observations", "rd2_add_observations", is_r2)
-
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.write("**Missed Rooms:**", checkmark(member_row.get(missed_rooms_col)))
-            st.write("**Disoriented:**", checkmark(member_row.get(disoriented_col)))
-            st.write("**Swept with Tool:**", checkmark(member_row.get(tool_col)))
-        with col2:
-            st.write("**Duplicate Rooms:**", checkmark(member_row.get(duplicate_col)))
-            st.write("**Search Delayed by Object:**", checkmark(member_row.get(delayed_col)))
-            st.write("**PPE/Equip Issues:**", checkmark(member_row.get(equip_col)))
-        with col3:
-            st.write("**Flipped/Moved Furniture:**", checkmark(member_row.get(furniture_col)))
-
-        notes = member_row.get(notes_col, "")
-        if notes and str(notes).strip():
-            st.markdown("**Additional Observations:**")
-            st.write(notes)
+    
 
 
 
