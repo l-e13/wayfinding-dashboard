@@ -1022,7 +1022,15 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         st.markdown("### Notes & Observations")
 
         def checkmark(val):
-            return "✅ Yes" if str(val).strip().lower() == "yes" else "❌ No"
+            if val is None or (isinstance(val, float) and pd.isna(val)) or str(val).strip() == "":
+                return "—"
+            s = str(val).strip().lower()
+            if s in {"yes", "y", "true", "1"}:
+                return "✅ Yes"
+            if s in {"no", "n", "false", "0"}:
+                return "❌ No"
+            return str(val)  # fallback if it’s something like a comment
+
 
         missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", is_r2)
         disoriented_col  = pick_col("disoriented", "rd2_disoriented", is_r2)
@@ -1197,6 +1205,7 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
     )
 
     show_task_metrics(df, member_id=member_id, group_choice=group_choice)
+show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
 
 
 
