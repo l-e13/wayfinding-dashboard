@@ -91,17 +91,15 @@ def blue_header_with_round_toggle(
 
     return st.session_state[state_key]
 
-def round_segmented_toggle(key: str, default_round: str = "Round 1") -> bool:
-    """
-    Returns is_r2 (bool). UI shows Round 1 on left, Round 2 on right.
-    """
+def round_segmented_toggle(key: str, label: str, default_round: str = "Round 1") -> bool:
     choice = st.segmented_control(
-        label="Toggle this section to compare Round 1 vs Round 2 search results.",
+        label=label,
         options=["Round 1", "Round 2"],
         default=default_round,
         key=f"{key}__seg",
     )
     return choice == "Round 2"
+
 
 
 TOTAL_AREA_R1 = 515
@@ -838,7 +836,18 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         return
 
     # Per-section round toggle
-    is_r2 = round_segmented_toggle(key="search", default_round="Round 1")
+    is_r2 = round_segmented_toggle(
+    key="search",
+    label="Toggle this section to compare Round 1 vs Round 2 search results.",
+    default_round="Round 1"
+)
+
+    heatmap_is_r2 = round_segmented_toggle(
+        key="heatmap",
+        label="Toggle this heatmap to compare Round 1 vs Round 2 spatial recall results.",
+        default_round=("Round 2" if is_r2 else "Round 1")
+    )
+
     st.markdown("---")
 
 
@@ -983,10 +992,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     )
 
     # Heatmap-specific round toggle (independent)
-    heatmap_is_r2 = round_segmented_toggle(
-        key="heatmap",
-        default_round=("Round 2" if is_r2 else "Round 1")  # start aligned with overall toggle, but user can change
-    )
+
 
     if not heatmap_is_r2:
         first_img, dup_img = draw_heatmaps_split(member_row, image_path=ROUND1_IMG)
@@ -1009,7 +1015,6 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             st.warning("Round 2 floor plan image not found.")
 
 
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
     # ---- Notes (toggle matches section round) ----
@@ -1209,11 +1214,12 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
     st.markdown("---")
 
     show_task_metrics(
-        df,
-        member_id=member_id,
-        group_choice=group_choice,
-        is_r2=task_is_r2
-    )
+    df,
+    member_id=member_id,
+    group_choice=group_choice,
+    is_r2=task_is_r2
+)
+
 
 show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
 
