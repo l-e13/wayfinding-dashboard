@@ -511,7 +511,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 def plot_score_distribution_kde(group_df, member_val, value_col, label):
     scores = pd.to_numeric(group_df[value_col], errors='coerce').dropna()
     if scores.empty:
-        return alt.Chart(pd.DataFrame({"x": [], "y": []})).mark_line()
+        return alt.Chart(pd.DataFrame({"x": [], "y": []})).mark_line(tooltip=None)
     # KDE setup
     kde = gaussian_kde(scores)
     x_vals = np.linspace(scores.min(), scores.max(), 200)
@@ -527,13 +527,13 @@ def plot_score_distribution_kde(group_df, member_val, value_col, label):
     })
 
     # Shaded KDE area
-    kde_area = alt.Chart(kde_df).mark_area(opacity=0.3, color="#0067A5").encode(
+    kde_area = alt.Chart(kde_df).mark_area(opacity=0.3, color="#0067A5", tooltip = None).encode(
         x="Score:Q",
         y=alt.Y("Density:Q", axis=None)
     )
 
     # KDE line
-    kde_line = alt.Chart(kde_df).mark_line(color="#0067B9").encode(
+    kde_line = alt.Chart(kde_df).mark_line(color="#0067B9", tooltip = None).encode(
         x=alt.X("Score:Q", title=label),
         y=alt.Y("Density:Q", axis=None)
     )
@@ -544,14 +544,14 @@ def plot_score_distribution_kde(group_df, member_val, value_col, label):
     )
     # Inline labels (with different dy values for spacing)
     text_you = alt.Chart(markers_df[markers_df["Type"] == "You"]).mark_text(
-        align="left", dx=3, dy=-10, fontSize=11, fontWeight="bold", color="#F04923"
+        align="left", dx=3, dy=-10, fontSize=11, fontWeight="bold", color="#F04923", tooltip = None
     ).encode(
         x="Score:Q",
         y=alt.value(0),
         text="Label:N"
     )
     text_avg = alt.Chart(markers_df[markers_df["Type"] == "Group Avg"]).mark_text(
-        align="left", dx=3, dy=-25, fontSize=11, fontWeight="bold", color="#0067A5"
+        align="left", dx=3, dy=-25, fontSize=11, fontWeight="bold", color="#0067A5", tooltip = None
     ).encode(
         x="Score:Q",
         y=alt.value(0),
@@ -1167,6 +1167,7 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
     
     is_r2 = round_segmented_toggle(
     key="nasa",
+    label="Toggle this section to compare Round 1 vs Round 2 NASA TLX results.",
     default_round="Round 1",
     )
     st.markdown("---")
