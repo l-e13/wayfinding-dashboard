@@ -344,7 +344,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
     # --- Task 3: Random Distance ---
     with col1:
-        blue_task_header("Random Travel Distance (participant asked to estimate travel distance)")
+        blue_task_header("Random Travel Distance", "Participant asked to estimate travel distance")
 
         t3_cols = [pick_col("t3_s1_de", "rd2_t3_s1_de", is_r2),
                    pick_col("t3_s2_de", "rd2_t3_s2_de", is_r2),
@@ -363,7 +363,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
     # --- Task 4: Pre-Determined Distance ---
     with col2:
-        blue_task_header("Pre-Determined Travel Distance (participant asked to travel 15 ft. forward)")
+        blue_task_header("Pre-Determined Travel Distance", "Participant asked to travel 15 ft. forward")
 
         t4_cols = [pick_col("t4_s1_ad", "rd2_t4_s1_ad", is_r2),
                    pick_col("t4_s2_ad", "rd2_t4_s2_ad", is_r2),
@@ -385,7 +385,7 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
     # --- Task 5: Triangle Completion ---
     with col3:
-        blue_task_header("Triangle Completion Task (participant asked to conduct a right-hand search, point to exit; then “beeline to exit”)")
+        blue_task_header("Triangle Completion Task","Participant asked to conduct a right-hand search, point to exit; then “beeline to exit”")
 
         t5_time_out = pick_col("t5_time_outbd", "rd2_t5_time_outbd", is_r2)
         t5_time_ret = pick_col("t5_time_rtrn", "rd2_t5_time_rtrn", is_r2)
