@@ -957,7 +957,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     unsafe_allow_html=True
 )
 
-    colA, colB = st.columns([1.4, 1.4])
+    colA, colB = st.columns([1, 1])
 
 
     with colA:
@@ -1171,6 +1171,7 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
 
 
 show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
+
 
 
 
