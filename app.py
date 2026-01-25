@@ -454,7 +454,10 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
         # --- Task 6: Turn Direction and Veer ---
     with col4:
-        blue_task_header("Turn Direction and Veer Task (participant asked to travel forward, stop, turn 90 degrees, then continue forward)")
+        blue_task_header(
+    "Turn Direction and Veer Task",
+    "Participant is asked to travel forward, stop, turn 90°, then continue forward."
+)
 
         t6_angle = pick_col("t6_brng_angl", "rd2_t6_brng_angl", is_r2)
         t6_time  = pick_col("t6_tot", "rd2_t6_tot", is_r2)
