@@ -1167,7 +1167,6 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
     
     is_r2 = round_segmented_toggle(
     key="nasa",
-    label="Toggle this section to compare Round 1 vs Round 2 NASA TLX results.",
     default_round="Round 1",
     )
     st.markdown("---")
