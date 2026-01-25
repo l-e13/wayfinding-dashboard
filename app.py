@@ -1189,20 +1189,45 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
 
     ldi_df = pd.DataFrame(chart_data)
 
-    ldi_chart = (
+        # Base bars (no hover tooltip)
+    bars = (
         alt.Chart(ldi_df)
         .mark_bar()
         .encode(
-            x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()), axis=alt.Axis(labelAngle=20)),
+            x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()),
+                    axis=alt.Axis(labelAngle=20)),
             xOffset=alt.XOffset("Type:N"),
             y=alt.Y("Value:Q", title="Rating (0–100)"),
-            color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"])),
-            tooltip=("Type", "Value")
+            color=alt.Color(
+                "Type:N",
+                scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"]),
+                legend=None
+            ),
         )
         .properties(width=500, height=300)
     )
 
+    # Text labels above bars
+    labels = (
+        alt.Chart(ldi_df)
+        .mark_text(dy=-6, fontSize=11, fontWeight="bold")
+        .encode(
+            x=alt.X("Metric:N", sort=list(load_metrics.keys())),
+            xOffset=alt.XOffset("Type:N"),
+            y=alt.Y("Value:Q"),
+            text=alt.Text("Value:Q", format=".0f"),
+            color=alt.Color(
+                "Type:N",
+                scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"]),
+                legend=None
+            ),
+        )
+    )
+
+    ldi_chart = bars + labels
+
     st.altair_chart(ldi_chart, use_container_width=True)
+
 
 
 
