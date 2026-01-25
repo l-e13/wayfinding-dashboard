@@ -339,13 +339,6 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
             unsafe_allow_html=True,
         )
 
-    # -----------------------------
-    # Task 3 & 4 headers + charts
-    # -----------------------------
-    blue_task_header(
-        "Task 3 & 4 — Distance Estimation",
-        "Shows your estimated distance vs the comparison group average and the actual distance (3 trials)."
-    )
 
     col1, col2 = st.columns(2)
 
