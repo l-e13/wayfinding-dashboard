@@ -304,8 +304,6 @@ def bordered_container(title, fig_or_chart, table_df):
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-
-
 def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False):
 
     if member_id is None or group_choice is None:
@@ -323,12 +321,38 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
         st.warning("No comparison group found.")
         return
 
+    def blue_task_header(title: str, subtitle: str | None = None):
+        st.markdown(
+            f"""
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px solid #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin: 10px 0 10px 0;
+            ">
+                <h4 style="margin: 0; color: white;">{title}</h4>
+                {f'<p style="margin:6px 0 0; font-size:14px; color:#f0f0f0; opacity:0.85; line-height:1.3;">{subtitle}</p>' if subtitle else ''}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     # -----------------------------
-    # Task 3: Random Distance
+    # Task 3 & 4 headers + charts
     # -----------------------------
+    blue_task_header(
+        "Task 3 & 4 — Distance Estimation",
+        "Shows your estimated distance vs the comparison group average and the actual distance (3 trials)."
+    )
+
     col1, col2 = st.columns(2)
 
+    # --- Task 3: Random Distance ---
     with col1:
+        blue_task_header("Task 3 — Random Distance", "Randomly selected distances (3 trials).")
+
         t3_cols = [pick_col("t3_s1_de", "rd2_t3_s1_de", is_r2),
                    pick_col("t3_s2_de", "rd2_t3_s2_de", is_r2),
                    pick_col("t3_s3_de", "rd2_t3_s3_de", is_r2)]
@@ -344,10 +368,9 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
                 use_container_width=True
             )
 
-    # -----------------------------
-    # Task 4: Pre-Determined Distance
-    # -----------------------------
+    # --- Task 4: Pre-Determined Distance ---
     with col2:
+        blue_task_header("Task 4 — Pre-Determined Distance", "Fixed distances (3 trials).")
 
         t4_cols = [pick_col("t4_s1_ad", "rd2_t4_s1_ad", is_r2),
                    pick_col("t4_s2_ad", "rd2_t4_s2_ad", is_r2),
@@ -365,11 +388,18 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
             )
 
     # -----------------------------
-    # Task 5: Triangle Completion
+    # Task 5 & 6 headers + visuals
     # -----------------------------
-    col3, col4 = st.columns(2)
-    with col3:
+    blue_task_header(
+        "Task 5 & 6 — Orientation & Veer",
+        "Visualizes your bearing angle vs ideal and group average, plus timing and summary tables."
+    )
 
+    col3, col4 = st.columns(2)
+
+    # --- Task 5: Triangle Completion ---
+    with col3:
+        blue_task_header("Task 5 — Triangle Completion", "Bearing + intersection angle with outbound/return timing.")
 
         t5_time_out = pick_col("t5_time_outbd", "rd2_t5_time_outbd", is_r2)
         t5_time_ret = pick_col("t5_time_rtrn", "rd2_t5_time_rtrn", is_r2)
@@ -434,13 +464,11 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
                 fmt(_to_num(group_data_base.get(t5_int_ang)).mean(), "°", round_int=True),
             ]
         })
-
         st.table(summary_df.set_index("Metric"))
 
-    # -----------------------------
-    # Task 6: Turn Direction and Veer
-    # -----------------------------
+        # --- Task 6: Turn Direction and Veer ---
     with col4:
+        blue_task_header("Task 6 — Turn Direction & Veer", "Bearing angle + task time compared to ideal and group average.")
 
         t6_angle = pick_col("t6_brng_angl", "rd2_t6_brng_angl", is_r2)
         t6_time  = pick_col("t6_tot", "rd2_t6_tot", is_r2)
@@ -477,9 +505,14 @@ def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False
 
         st.pyplot(fig_veer, use_container_width=True)
 
+        def fmt(val, unit="", round_int=False):
+            if pd.isna(val):
+                return "—"
+            return f"{int(round(val))}{unit}" if round_int else f"{val}{unit}"
+
         metrics_df = pd.DataFrame({
             "Metric": ["Task Time", "Bearing Angle"],
-            "You": [fmt(task_time, round_int=False), fmt(bearing_angle, "°")],
+            "You": [fmt(task_time), fmt(bearing_angle, "°")],
             "Compare": [fmt(_to_num(group_data_base.get(t6_time)).mean()), fmt(compare_angle, "°", round_int=True)]
         })
         st.table(metrics_df.set_index("Metric"))
