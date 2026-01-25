@@ -308,7 +308,7 @@ def bordered_container(title, fig_or_chart, table_df):
 
 
 
-def show_task_metrics(df, member_id=None, group_choice=None):
+def show_task_metrics(df, member_id=None, group_choice=None, is_r2: bool = False):
 
     if member_id is None or group_choice is None:
         st.warning("Please select a member and comparison group.")
@@ -331,12 +331,6 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     col1, col2 = st.columns(2)
 
     with col1:
-        is_r2 = blue_header_with_round_toggle(
-            "Random Travel Distance",
-            "Participant asked to estimate travel distance",
-            key="task3",
-            default_round="Round 1",
-        )
         t3_cols = [pick_col("t3_s1_de", "rd2_t3_s1_de", is_r2),
                    pick_col("t3_s2_de", "rd2_t3_s2_de", is_r2),
                    pick_col("t3_s3_de", "rd2_t3_s3_de", is_r2)]
@@ -356,12 +350,7 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     # Task 4: Pre-Determined Distance
     # -----------------------------
     with col2:
-        is_r2 = blue_header_with_round_toggle(
-            "Pre-Determined Travel Distance",
-            "Participant asked to travel 15 ft. forward",
-            key="task4",
-            default_round="Round 1",
-        )
+
         t4_cols = [pick_col("t4_s1_ad", "rd2_t4_s1_ad", is_r2),
                    pick_col("t4_s2_ad", "rd2_t4_s2_ad", is_r2),
                    pick_col("t4_s3_ad", "rd2_t4_s3_ad", is_r2)]
@@ -382,12 +371,7 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     # -----------------------------
     col3, col4 = st.columns(2)
     with col3:
-        is_r2 = blue_header_with_round_toggle(
-            "Triangle Completion Task",
-            "Participant asked to conduct a right-hand search, point to exit, then “beeline to exit.”",
-            key="task5",
-            default_round="Round 1",
-        )
+
 
         t5_time_out = pick_col("t5_time_outbd", "rd2_t5_time_outbd", is_r2)
         t5_time_ret = pick_col("t5_time_rtrn", "rd2_t5_time_rtrn", is_r2)
@@ -459,12 +443,6 @@ def show_task_metrics(df, member_id=None, group_choice=None):
     # Task 6: Turn Direction and Veer
     # -----------------------------
     with col4:
-        is_r2 = blue_header_with_round_toggle(
-            "Turn Direction and Veer Task",
-            "Participant asked to travel forward, stop, turn 90 degrees, then continue forward",
-            key="task6",
-            default_round="Round 1",
-        )
 
         t6_angle = pick_col("t6_brng_angl", "rd2_t6_brng_angl", is_r2)
         t6_time  = pick_col("t6_tot", "rd2_t6_tot", is_r2)
@@ -1151,13 +1129,14 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
     if group_data_base.empty:
         st.warning("No comparison group found.")
         return
-
-    is_r2 = blue_header_with_round_toggle(
-        "NASA Task Load Index",
-        "Self-reported workload ratings (0–100).",
-        key="task8",
-        default_round="Round 1",
+    
+    is_r2 = round_segmented_toggle(
+    key="nasa",
+    label="Toggle this section to compare Round 1 vs Round 2 NASA TLX results.",
+    default_round="Round 1",
     )
+    st.markdown("---")
+
 
     load_metrics = {
         "Mental": pick_col("t8_mental", "rd2_t8_mental", is_r2),
@@ -1221,7 +1200,21 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
         unsafe_allow_html=True
     )
 
-    show_task_metrics(df, member_id=member_id, group_choice=group_choice)
+    task_is_r2 = round_segmented_toggle(
+    key="tasks",
+    label="Toggle this section to compare Round 1 vs Round 2 Task Performance results.",
+    default_round="Round 1",
+)
+
+    st.markdown("---")
+
+    show_task_metrics(
+        df,
+        member_id=member_id,
+        group_choice=group_choice,
+        is_r2=task_is_r2
+    )
+
 show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
 
 
