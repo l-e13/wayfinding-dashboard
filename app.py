@@ -987,7 +987,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             use_container_width=True
         )
 
-    # ---- Heatmap (toggle matches section round) ----
+    # ---- Heatmap (its own toggle) ----
     st.markdown(
         """
         <div style="
@@ -996,14 +996,21 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             border: 4px #0067A5;
             border-radius: 10px;
             padding: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         ">
         <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmap</h4>
+        </div>
         """,
         unsafe_allow_html=True
     )
 
-    if not is_r2:
+    # Heatmap-specific round toggle (independent)
+    heatmap_is_r2 = round_segmented_toggle(
+        key="heatmap",
+        default_round=("Round 2" if is_r2 else "Round 1")  # start aligned with overall toggle, but user can change
+    )
+
+    if not heatmap_is_r2:
         first_img, dup_img = draw_heatmaps_split(member_row, image_path=ROUND1_IMG)
         if first_img is not None:
             st.image(first_img, caption="Round 1 — areas searched (light red)", use_container_width=True)
@@ -1023,6 +1030,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         else:
             st.warning("Round 2 floor plan image not found.")
 
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1041,14 +1049,14 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             return str(val)  # fallback if it’s something like a comment
 
 
-        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", is_r2)
-        disoriented_col  = pick_col("disoriented", "rd2_disoriented", is_r2)
-        tool_col         = pick_col("tool", "rd2_tool", is_r2)
-        duplicate_col    = pick_col("duplicate", "rd2_duplicate", is_r2)
-        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", is_r2)
-        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", is_r2)
-        furniture_col    = pick_col("furniture", "rd2_furniture", is_r2)
-        notes_col        = pick_col("add_observations", "rd2_add_observations", is_r2)
+        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", heatmap_is_r2)
+        disoriented_col  = pick_col("disoriented", "rd2_disoriented", heatmap_is_r2)
+        tool_col         = pick_col("tool", "rd2_tool", heatmap_is_r2)
+        duplicate_col    = pick_col("duplicate", "rd2_duplicate", heatmap_is_r2)
+        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", heatmap_is_r2)
+        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", heatmap_is_r2)
+        furniture_col    = pick_col("furniture", "rd2_furniture", heatmap_is_r2)
+        notes_col        = pick_col("add_observations", "rd2_add_observations", heatmap_is_r2)
 
         col1, col2, col3 = st.columns(3)
         with col1:
