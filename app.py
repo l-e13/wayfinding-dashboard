@@ -1167,7 +1167,7 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
     
     is_r2 = round_segmented_toggle(
     key="nasa",
-    label="Toggle this section to compare Round 1 vs Round 2 NASA TLX results.",
+    label="Toggle this section to compare Round 1 vs Round 2 NASA Task results.",
     default_round="Round 1",
     )
     st.markdown("---")
@@ -1189,28 +1189,28 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
 
     ldi_df = pd.DataFrame(chart_data)
 
-        # Base bars (no hover tooltip)
-    bars = (
-        alt.Chart(ldi_df)
-        .mark_bar()
-        .encode(
-            x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()),
-                    axis=alt.Axis(labelAngle=20)),
-            xOffset=alt.XOffset("Type:N"),
-            y=alt.Y("Value:Q", title="Rating (0–100)"),
-            color=alt.Color(
-                "Type:N",
-                scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"]),
-                legend=None
-            ),
-        )
-        .properties(width=500, height=300)
-    )
 
-    # Text labels above bars
+    bars = (
+    alt.Chart(ldi_df)
+    .mark_bar(tooltip=None)  # hard disable
+    .encode(
+        x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()),
+                axis=alt.Axis(labelAngle=20)),
+        xOffset=alt.XOffset("Type:N"),
+        y=alt.Y("Value:Q", title="Rating (0–100)"),
+        color=alt.Color(
+            "Type:N",
+            scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"]),
+            legend=None
+        ),
+        tooltip=alt.value(None),  # extra hard disable
+    )
+    .properties(width=500, height=300)
+)
+
     labels = (
         alt.Chart(ldi_df)
-        .mark_text(dy=-6, fontSize=11, fontWeight="bold")
+        .mark_text(dy=-6, fontSize=11, fontWeight="bold", tooltip=None)  # hard disable
         .encode(
             x=alt.X("Metric:N", sort=list(load_metrics.keys())),
             xOffset=alt.XOffset("Type:N"),
@@ -1221,12 +1221,13 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
                 scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"]),
                 legend=None
             ),
+            tooltip=alt.value(None),  # extra hard disable
         )
     )
 
     ldi_chart = bars + labels
-
     st.altair_chart(ldi_chart, use_container_width=True)
+
 
 
 
