@@ -38,7 +38,6 @@ ROUND2_IMG = "Round 2 floor plan.png"
 st.set_page_config(layout="wide")
 
 st.title("Wayfinding Performance Study Dashboard")
-st.subheader("Initial Assessment")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
@@ -1090,7 +1089,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
 
 
     # ---- Time to Bed (Round 1 only; Round 2 does not collect these fields) ----
-    if not is_r2:
+    if not heatmap_is_r2:
         bed_metrics = {
             "Time to Bed 1": "time_to_b1",
             "Time to Bed 2": "time_to_b2",
