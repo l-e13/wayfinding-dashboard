@@ -91,6 +91,18 @@ def blue_header_with_round_toggle(
 
     return st.session_state[state_key]
 
+def round_segmented_toggle(key: str, default_round: str = "Round 1") -> bool:
+    """
+    Returns is_r2 (bool). UI shows Round 1 on left, Round 2 on right.
+    """
+    choice = st.segmented_control(
+        label="Toggle this section to compare Round 1 vs Round 2 search results.",
+        options=["Round 1", "Round 2"],
+        default=default_round,
+        key=f"{key}__seg",
+    )
+    return choice == "Round 2"
+
 
 TOTAL_AREA_R1 = 515
 TOTAL_AREA_R2 = 512.5
@@ -848,12 +860,9 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         return
 
     # Per-section round toggle
-    is_r2 = blue_header_with_round_toggle(
-        "Search Performance",
-        "Toggle this section to compare Round 1 vs Round 2 search results.",
-        key="search",
-        default_round="Round 1",
-    )
+    is_r2 = round_segmented_toggle(key="search", default_round="Round 1")
+    st.markdown("---")
+
 
     df_round = add_search_derived(df, is_r2)
     member_row = df_round[df_round['id'] == member_id]
