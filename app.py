@@ -42,13 +42,64 @@ st.subheader("Initial Assessment")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
-round_choice = st.sidebar.radio(
-    "Select Assessment Round",
-    options=["Round 1", "Round 2"],
-    horizontal=True
-)
+def blue_header_with_round_toggle(
+    title: str,
+    subtitle: str | None,
+    key: str,
+    default_round: str = "Round 1",
+):
+    """
+    Renders a blue header block with a per-section round toggle.
+    Returns: is_r2 (bool)
+    """
+    # persist per-section state
+    state_key = f"{key}__round"
+    if state_key not in st.session_state:
+        st.session_state[state_key] = (default_round == "Round 2")
 
-IS_R2 = round_choice == "Round 2"
+    # Header layout: title/description on left, toggle on right
+    left, right = st.columns([5, 1.5], vertical_alignment="center")
+
+    with left:
+        st.markdown(
+            f"""
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px solid #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 10px;
+            ">
+                <h4 style="margin: 0; color: white;">{title}</h4>
+                {f'<p style="margin:6px 0 0; font-size:14px; color:#f0f0f0; opacity:0.85; line-height:1.3;">{subtitle}</p>' if subtitle else ''}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with right:
+        # Make it obvious what toggle means
+        st.caption("Round")
+        is_r2 = st.toggle(
+            "Round 2",
+            value=st.session_state[state_key],
+            key=f"{key}__toggle",
+            help="Toggle this section between Round 1 and Round 2 results."
+        )
+        st.session_state[state_key] = is_r2
+
+    return st.session_state[state_key]
+
+
+TOTAL_AREA_R1 = 515
+TOTAL_AREA_R2 = 512.5
+
+def pick_col(r1_col: str, r2_col: str, is_r2: bool) -> str:
+    return r2_col if is_r2 else r1_col
+
+def pick_total_area(is_r2: bool) -> float:
+    return TOTAL_AREA_R2 if is_r2 else TOTAL_AREA_R1
 
 
 group_order = ['Overall', 'OIC', 'FF', 'Tech', 'RS-1', 'RS-2', 'RS-3', 'T-6', 'Other Assignment']
