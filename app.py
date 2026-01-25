@@ -864,11 +864,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     default_round="Round 1"
 )
 
-    heatmap_is_r2 = round_segmented_toggle(
-        key="heatmap",
-        label="Toggle this heatmap to compare Round 1 vs Round 2 spatial recall results.",
-        default_round=("Round 2" if is_r2 else "Round 1")
-    )
+
 
     st.markdown("---")
 
@@ -996,23 +992,35 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             use_container_width=True
         )
 
-    # ---- Heatmap (its own toggle) ----
-    st.markdown(
-        """
-        <div style="
-            background-color: #0067A5;
-            color: white;
-            border: 4px #0067A5;
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 10px;
-        ">
-        <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmap</h4>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # ---- Spatial Recall header + toggle in same row ----
+    left, right = st.columns([5, 1.5], vertical_alignment="center")
 
+    with left:
+        st.markdown(
+            """
+            <div style="
+                background-color: #0067A5;
+                color: white;
+                border: 4px solid #0067A5;
+                border-radius: 10px;
+                padding: 10px;
+                margin-bottom: 10px;
+            ">
+                <h4 style="margin: 0; color: white;">Spatial Recall Task Heatmap</h4>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with right:
+        heatmap_is_r2 = st.segmented_control(
+            label="Round",
+            options=["Round 1", "Round 2"],
+            default=("Round 2" if is_r2 else "Round 1"),
+            key="heatmap__seg",
+        ) == "Round 2"
+
+ 
     # Heatmap-specific round toggle (independent)
 
 
