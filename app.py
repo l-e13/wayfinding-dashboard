@@ -42,6 +42,15 @@ st.subheader("Initial Assessment")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
+round_choice = st.sidebar.radio(
+    "Select Assessment Round",
+    options=["Round 1", "Round 2"],
+    horizontal=True
+)
+
+IS_R2 = round_choice == "Round 2"
+
+
 group_order = ['Overall', 'OIC', 'FF', 'Tech', 'RS-1', 'RS-2', 'RS-3', 'T-6', 'Other Assignment']
 col1, col2 = st.columns(2)
 
