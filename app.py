@@ -496,46 +496,6 @@ def show_task_metrics(df, member_id=None, group_choice=None):
         })
         st.table(metrics_df.set_index("Metric"))
 
-    # -----------------------------
-    # NASA Task Load Index (Task 8)
-    # -----------------------------
-    is_r2 = blue_header_with_round_toggle(
-        "NASA Task Load Index",
-        "Self-reported workload ratings (0–100).",
-        key="task8",
-        default_round="Round 1",
-    )
-
-    load_metrics = {
-        "Mental": pick_col("t8_mental", "rd2_t8_mental", is_r2),
-        "Physical": pick_col("t8_physical", "rd2_t8_physical", is_r2),
-        "Temporal": pick_col("t8_temporal", "rd2_t8_temporal", is_r2),
-        "Performance": pick_col("t8_performance", "rd2_t8_performance", is_r2),
-        "Effort": pick_col("t8_effort", "rd2_t8_effort", is_r2),
-        "Frustration": pick_col("t8_frustration", "rd2_t8_frustration", is_r2),
-    }
-
-    ldi_chart_data = []
-    for label, col in load_metrics.items():
-        ldi_chart_data.append({"Metric": label, "Value": _to_num(member_data.get(col)), "Type": "You"})
-        ldi_chart_data.append({"Metric": label, "Value": _to_num(group_data_base.get(col)).mean(), "Type": "Compare"})
-
-    ldi_df = pd.DataFrame(ldi_chart_data)
-
-    ldi_chart = (
-        alt.Chart(ldi_df)
-        .mark_bar()
-        .encode(
-            x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()), axis=alt.Axis(labelAngle=20)),
-            xOffset=alt.XOffset("Type:N"),
-            y=alt.Y("Value:Q", title="Rating (0–100)"),
-            color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"])),
-            tooltip=("Type", "Value")
-        )
-        .properties(width=500, height=300)
-    )
-
-    st.altair_chart(ldi_chart, use_container_width=True)
 
 
 def plot_score_distribution_kde(group_df, member_val, value_col, label):
@@ -1151,6 +1111,59 @@ def show_search_metrics(df, member_id=None, group_choice=None):
 
 
     
+def show_nasa_tlx(df, member_id=None, group_choice=None):
+    if member_id is None or group_choice is None:
+        st.warning("Please select a member and comparison group.")
+        return
+
+    member_data = df[df['id'] == member_id]
+    if member_data.empty:
+        st.warning("No data available for this member.")
+        return
+    member_row = member_data.iloc[0]
+
+    group_data_base = get_group_data(df, group_choice)
+    if group_data_base.empty:
+        st.warning("No comparison group found.")
+        return
+
+    is_r2 = blue_header_with_round_toggle(
+        "NASA Task Load Index",
+        "Self-reported workload ratings (0–100).",
+        key="task8",
+        default_round="Round 1",
+    )
+
+    load_metrics = {
+        "Mental": pick_col("t8_mental", "rd2_t8_mental", is_r2),
+        "Physical": pick_col("t8_physical", "rd2_t8_physical", is_r2),
+        "Temporal": pick_col("t8_temporal", "rd2_t8_temporal", is_r2),
+        "Performance": pick_col("t8_performance", "rd2_t8_performance", is_r2),
+        "Effort": pick_col("t8_effort", "rd2_t8_effort", is_r2),
+        "Frustration": pick_col("t8_frustration", "rd2_t8_frustration", is_r2),
+    }
+
+    chart_data = []
+    for label, col in load_metrics.items():
+        chart_data.append({"Metric": label, "Value": _to_num(member_row.get(col)), "Type": "You"})
+        chart_data.append({"Metric": label, "Value": _to_num(group_data_base.get(col)).mean(), "Type": "Compare"})
+
+    ldi_df = pd.DataFrame(chart_data)
+
+    ldi_chart = (
+        alt.Chart(ldi_df)
+        .mark_bar()
+        .encode(
+            x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()), axis=alt.Axis(labelAngle=20)),
+            xOffset=alt.XOffset("Type:N"),
+            y=alt.Y("Value:Q", title="Rating (0–100)"),
+            color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"])),
+            tooltip=("Type", "Value")
+        )
+        .properties(width=500, height=300)
+    )
+
+    st.altair_chart(ldi_chart, use_container_width=True)
 
 
 
@@ -1161,28 +1174,30 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
 
     st.markdown("---")
 
+    st.markdown("## NASA Task Load Index")
+    show_nasa_tlx(df, member_id=member_id, group_choice=group_choice)
+
+    st.markdown("---")
+
     st.markdown(
-    """
-    <h2 style="margin-bottom:0;">Task Performance</h2>
-    <p style="
-        font-size:16px;
-        color:#555;
-        margin-top:4px;
-        line-height:1.4;
-        max-width:1200px;
-    ">
-        These tasks are typical of the kind of tests administered in Dr. Philbeck’s Movement Laboratory.
-        We are interested in comparing how the firefighter population performs versus the general population.
-    </p>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <h2 style="margin-bottom:0;">Task Performance</h2>
+        <p style="
+            font-size:16px;
+            color:#555;
+            margin-top:4px;
+            line-height:1.4;
+            max-width:1200px;
+        ">
+            These tasks are typical of the kind of tests administered in Dr. Philbeck’s Movement Laboratory.
+            We are interested in comparing how the firefighter population performs versus the general population.
+        </p>
+        """,
+        unsafe_allow_html=True
+    )
 
     show_task_metrics(df, member_id=member_id, group_choice=group_choice)
 
-
-
-show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
 
 
 
