@@ -102,6 +102,81 @@ def pick_total_area(is_r2: bool) -> float:
     return TOTAL_AREA_R2 if is_r2 else TOTAL_AREA_R1
 
 
+def _to_num(x):
+    """Coerce values like '482', 482, '482.0' -> float; returns NaN if not parseable."""
+    return pd.to_numeric(x, errors="coerce")
+
+def _to_pct01(x):
+    """Coerce values like '93.66%', 93.66, 0.9366 -> 0-1 float."""
+    if pd.isna(x):
+        return np.nan
+    if isinstance(x, str):
+        s = x.strip()
+        if s.endswith("%"):
+            s = s[:-1].strip()
+            v = pd.to_numeric(s, errors="coerce")
+            return v / 100 if pd.notna(v) else np.nan
+        v = pd.to_numeric(s, errors="coerce")
+        if pd.isna(v):
+            return np.nan
+        return v / 100 if v > 1 else float(v)
+    v = pd.to_numeric(x, errors="coerce")
+    if pd.isna(v):
+        return np.nan
+    return v / 100 if v > 1 else float(v)
+
+def add_search_derived(df_in: pd.DataFrame, is_r2: bool) -> pd.DataFrame:
+    """
+    Adds round-aware derived columns used in the Search Performance section:
+      - total_ft
+      - total_perc01
+      - time_called_sec
+      - search_rate_sqft_min
+      - adjusted_score
+      - bed_quadrants_searched (out of 12)
+      - percent_beds_searched
+    """
+    df2 = df_in.copy()
+
+    total_ft_col   = pick_col("total_ft_searched", "rd2_total_ft_searched", is_r2)
+    total_perc_col = pick_col("total_perc_searched", "rd2_total_perc_searched", is_r2)
+    time_called_col = pick_col("search_called", "rd2_t7_tot_time", is_r2)  # best available Round 2 analog
+
+    df2["total_ft"] = _to_num(df2.get(total_ft_col))
+    df2["total_perc01"] = df2.get(total_perc_col).apply(_to_pct01)
+
+    df2["time_called_sec"] = _to_num(df2.get(time_called_col))
+    df2["search_rate_sqft_min"] = (df2["total_ft"] / df2["time_called_sec"]) * 60
+    df2["adjusted_score"] = df2["search_rate_sqft_min"] * df2["total_perc01"]
+
+    # Bed quadrant credit (still out of 12; cols differ by round)
+    bed_cols_r1 = [
+        "r1_b1a", "r1_b1b", "r1_b1c", "r1_b1d",
+        "r5_b2a", "r5_b2b", "r5_b2c", "r5_b2d",
+        "r6_b3a", "r6_b3b", "r6_b3c", "r6_b3d"
+    ]
+    bed_cols_r2 = [
+        "rd2_r1_b1a", "rd2_r1_b1b", "rd2_r1_b1c", "rd2_r1_b1d",
+        "rd2_r6_b2a", "rd2_r6_b2b", "rd2_r6_b2c", "rd2_r6_b2d",
+        "rd2_r7_b3a", "rd2_r7_b3b", "rd2_r7_b3c", "rd2_r7_b3d",
+    ]
+    bed_cols = bed_cols_r2 if is_r2 else bed_cols_r1
+
+    for c in bed_cols:
+        if c not in df2.columns:
+            df2[c] = np.nan
+
+    df2["bed_quadrants_searched"] = (
+        df2[bed_cols]
+        .apply(lambda s: _to_num(s), axis=0)
+        .apply(lambda s: (s.fillna(0) != 0), axis=0)
+        .sum(axis=1)
+    )
+
+    df2["percent_beds_searched"] = (df2["bed_quadrants_searched"] / 12) * 100
+    return df2
+
+
 group_order = ['Overall', 'OIC', 'FF', 'Tech', 'RS-1', 'RS-2', 'RS-3', 'T-6', 'Other Assignment']
 col1, col2 = st.columns(2)
 
@@ -220,6 +295,7 @@ def bordered_container(title, fig_or_chart, table_df):
 
 
 
+
 def show_task_metrics(df, member_id=None, group_choice=None):
 
     if member_id is None or group_choice is None:
@@ -231,272 +307,235 @@ def show_task_metrics(df, member_id=None, group_choice=None):
         st.warning("No data available for this member.")
         return
 
-    group_data = get_group_data(df, group_choice)
+    member_data = member_data.iloc[0]
+    group_data_base = get_group_data(df, group_choice)
+    if group_data_base.empty:
+        st.warning("No comparison group found.")
+        return
 
-
-    compare_avg = group_data[['t3_s1_de', 't3_s2_de', 't3_s3_de']].mean().tolist()
-
-
-    #### Task 3: Random Distance ####
-    member_est = member_data[['t3_s1_de', 't3_s2_de', 't3_s3_de']].values.flatten().tolist()
-    compare_avg = group_data[['t3_s1_de', 't3_s2_de', 't3_s3_de']].mean().tolist()
-    actuals = [10, 10, 15]
-
-    if any(pd.isna(member_est)) or any(pd.isna(compare_avg)):
-        st.warning("Missing data for Random Distance. Cannot render chart.")
-        fig_random = None
-    else:
-        fig_random = create_arrow_chart_spaced(
-            member_est=member_est,
-            compare_avg=compare_avg,
-            actuals=actuals
-        )
-
-
-
-    #### Task 4: Determined Distance ####
-    member_est = member_data[['t4_s1_ad', 't4_s2_ad', 't4_s3_ad']].values.flatten().tolist()
-    compare_avg = group_data[['t4_s1_ad', 't4_s2_ad', 't4_s3_ad']].mean().tolist()
-    actuals = [15, 15, 15]
-
-    if any(pd.isna(member_est)) or any(pd.isna(compare_avg)):
-        st.warning("Missing data for Determined Distance. Cannot render chart.")
-        fig_determined = None
-    else:
-        fig_determined = create_arrow_chart_spaced(
-            member_est=member_est,
-            compare_avg=compare_avg,
-            actuals=actuals
-        )
-
-
-    #### Task 5: Triangle Completion ####
-    actual_offset = member_data['t5_brng_angl'].values[0]
-    intersect_angle = member_data['t5_intsct_angl'].values[0]
-    ideal_relative = -25
-    ideal_bearing = 270 - ideal_relative
-    actual_bearing = 270 - actual_offset
-    compare_offset = group_data['t5_brng_angl'].mean()
-    compare_bearing = 270 - compare_offset
-
-    arrow_length = 3
-    fig_triangle, ax = plt.subplots(figsize=(4, 2.5), dpi=100)
-    ax.set_aspect('equal')
-    ax.set_xlim(-1, 5)
-    ax.set_ylim(-1, 5)
-    ax.axis('off')
-
-    ax.set_facecolor("#0067A5")
-    ax.set_aspect('equal')
-    ax.axis('off')
-    ax.plot([3, 3], [0, 3], color='black', linewidth=2)
-    ax.plot([0, 3], [3, 3], color='black', linewidth=2)
-
-    for angle, color in zip([ideal_bearing, compare_bearing, actual_bearing], ['#0067A5', '#00A86B', '#F04923']):
-        dx = arrow_length * np.cos(np.radians(angle))
-        dy = arrow_length * np.sin(np.radians(angle))
-        ax.arrow(0, 3, dx, dy, head_width=0.15, color=color, linewidth=2, length_includes_head=True)
-
-    ax.plot([], [], color='#0067A5', label='Ideal')   
-    ax.plot([], [], color='#F04923', label='You')
-    ax.plot([], [], color='#00A86B', label='Compare')
-
-    legend = ax.legend(loc='center left', bbox_to_anchor=(1.05, 0.5),frameon=False)
-    for text in legend.get_texts():
-        text.set_color('black')
-
-    def fmt(val, unit="", round_int=False):
-        if pd.isna(val):
-            return "No time recorded"
-        return f"{int(round(val))}{unit}" if round_int else f"{val}{unit}"
-
-    group_data['t5_time_outbd'] = pd.to_numeric(group_data['t5_time_outbd'], errors='coerce')
-    group_data['t5_time_rtrn'] = pd.to_numeric(group_data['t5_time_rtrn'], errors='coerce')
-    group_data['t5_intsct_angl'] = pd.to_numeric(group_data['t5_intsct_angl'], errors='coerce')
-    group_data['t5_brng_angl'] = pd.to_numeric(group_data['t5_brng_angl'], errors='coerce')
-
-    summary_df = pd.DataFrame({
-        "Metric": ["Outbound Time", "Return Time", "Bearing Angle", "Intersect Angle"],
-        "You": [
-            fmt(member_data['t5_time_outbd'].values[0]),
-            fmt(member_data['t5_time_rtrn'].values[0]),
-            fmt(actual_offset, "°"),
-            fmt(intersect_angle, "°"),
-        ],
-        "Compare": [
-        fmt(group_data['t5_time_outbd'].mean(), round_int= True),
-        fmt(group_data['t5_time_rtrn'].mean(), round_int= True),
-        fmt(compare_offset, "°", round_int= True),
-        fmt(group_data['t5_intsct_angl'].mean(), "°", round_int= True),
-    ]
-
-    })
-
-    #### Task 6: Turn and Veer ####
-    bearing_angle = member_data['t6_brng_angl'].values[0]
-    task_time = member_data['t6_tot'].values[0]
-    compare_angle = group_data['t6_brng_angl'].mean()
-
-    fig_veer, ax = plt.subplots(figsize=(4, 2.5), dpi=100)
-    ax.set_aspect('equal')
-    ax.set_xlim(-3, 3)
-    ax.set_ylim(-1, 5)
-    ax.axis('off')
-
-    ax.set_facecolor("#0067A5")
-    ax.set_aspect('equal')
-    ax.axis('off')
-    arrow_length = 3
-    origin_x, origin_y = -2, 0
-    ax.plot([origin_x + 2, origin_x], [origin_y, origin_y], color='black', linewidth=2)
-
-    for angle, color in zip([0, -compare_angle, -bearing_angle], ['#0067A5', '#00A86B', '#F04923']):
-        dx = arrow_length * np.sin(np.radians(angle))
-        dy = arrow_length * np.cos(np.radians(angle))
-        ax.arrow(origin_x, origin_y, dx, dy, head_width=0.15, color=color, linewidth=2, length_includes_head=True)
-
-    ax.plot([], [], color='#0067A5', label='Ideal')
-    ax.plot([], [], color='#F04923', label='You')
-    ax.plot([], [], color='#00A86B', label='Compare')
-
-    legend = ax.legend(loc='center left', bbox_to_anchor=(1.05, .5),frameon=False)
-    for text in legend.get_texts():
-        text.set_color('black')
-
-
-    metrics_df = pd.DataFrame({
-        "Metric": ["Task Time", "Bearing Angle"],
-        "You": [f"{task_time:.2f}", f"{bearing_angle:+.0f}°"],
-        "Compare": [
-        f"{group_data['t6_tot'].mean():.2f}",
-        f"{compare_angle:+.0f}°"
-    ]
-    })
-
-    #### Layout ####
-
+    # -----------------------------
+    # Task 3: Random Distance
+    # -----------------------------
     col1, col2 = st.columns(2)
+
     with col1:
-        st.markdown(
-            """
-            <div style="
-                background-color: #0067A5;
-                color: white;
-                border: 4px #0067A5;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 20px;
-            ">
-                <h4 style="margin-top: 0; color: white;">Random Travel Distance</h4>
-                <p style="
-                    font-size:16px;
-                    color:#f0f0f0;
-                    margin-top:-6px;
-                    margin-bottom:10px;
-                    line-height:1.3;
-                    opacity:0.85;
-                ">
-                    Participant asked to estimate travel distance
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        is_r2 = blue_header_with_round_toggle(
+            "Random Travel Distance",
+            "Participant asked to estimate travel distance",
+            key="task3",
+            default_round="Round 1",
         )
-        if fig_random:
-            st.altair_chart(fig_random, use_container_width=True)
+        t3_cols = [pick_col("t3_s1_de", "rd2_t3_s1_de", is_r2),
+                   pick_col("t3_s2_de", "rd2_t3_s2_de", is_r2),
+                   pick_col("t3_s3_de", "rd2_t3_s3_de", is_r2)]
+        member_est = [_to_num(member_data.get(c)) for c in t3_cols]
+        compare_avg = [_to_num(group_data_base.get(c)).mean() for c in t3_cols]
+        actuals = [10, 10, 15]
 
+        if any(pd.isna(member_est)) or any(pd.isna(compare_avg)):
+            st.warning("Missing data for Random Distance. Cannot render chart.")
+        else:
+            st.altair_chart(
+                create_arrow_chart_spaced(member_est=member_est, compare_avg=compare_avg, actuals=actuals),
+                use_container_width=True
+            )
+
+    # -----------------------------
+    # Task 4: Pre-Determined Distance
+    # -----------------------------
     with col2:
-        st.markdown(
-            """
-            <div style="
-                background-color: #0067A5;
-                color: white;
-                border: 4px #0067A5;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 20px;
-            ">
-                <h4 style="margin-top: 0; color: white;">Pre-Determined Travel Distance</h4>
-                <p style="
-                    font-size:16px;
-                    color:#f0f0f0;
-                    margin-top:-6px;
-                    margin-bottom:10px;
-                    line-height:1.3;
-                    opacity:0.85;
-                ">
-                    Participant asked to travel 15 ft. forward
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        is_r2 = blue_header_with_round_toggle(
+            "Pre-Determined Travel Distance",
+            "Participant asked to travel 15 ft. forward",
+            key="task4",
+            default_round="Round 1",
         )
-        if fig_determined:
-            st.altair_chart(fig_determined, use_container_width=True)
+        t4_cols = [pick_col("t4_s1_ad", "rd2_t4_s1_ad", is_r2),
+                   pick_col("t4_s2_ad", "rd2_t4_s2_ad", is_r2),
+                   pick_col("t4_s3_ad", "rd2_t4_s3_ad", is_r2)]
+        member_est = [_to_num(member_data.get(c)) for c in t4_cols]
+        compare_avg = [_to_num(group_data_base.get(c)).mean() for c in t4_cols]
+        actuals = [15, 15, 15]
 
+        if any(pd.isna(member_est)) or any(pd.isna(compare_avg)):
+            st.warning("Missing data for Determined Distance. Cannot render chart.")
+        else:
+            st.altair_chart(
+                create_arrow_chart_spaced(member_est=member_est, compare_avg=compare_avg, actuals=actuals),
+                use_container_width=True
+            )
+
+    # -----------------------------
+    # Task 5: Triangle Completion
+    # -----------------------------
     col3, col4 = st.columns(2)
     with col3:
-        st.markdown(
-            """
-            <div style="
-                background-color: #0067A5;
-                color: white;
-                border: 4px #0067A5;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 20px;
-            ">
-                <h4 style="margin-top: 0; color: white;">Triangle Completion Task</h4>
-                <p style="
-                    font-size:16px;
-                    color:#f0f0f0;
-                    margin-top:-6px;
-                    margin-bottom:10px;
-                    line-height:1.3;
-                    opacity:0.85;
-                ">
-                    Participant asked to conduct a right-hand search, point to exit, then “beeline to exit.”
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        is_r2 = blue_header_with_round_toggle(
+            "Triangle Completion Task",
+            "Participant asked to conduct a right-hand search, point to exit, then “beeline to exit.”",
+            key="task5",
+            default_round="Round 1",
         )
-        if fig_triangle:
-            st.pyplot(fig_triangle, use_container_width=True)
-        if summary_df is not None:
-            st.table(summary_df.set_index("Metric"))
 
+        t5_time_out = pick_col("t5_time_outbd", "rd2_t5_time_outbd", is_r2)
+        t5_time_ret = pick_col("t5_time_rtrn", "rd2_t5_time_rtrn", is_r2)
+        t5_bearing  = pick_col("t5_brng_angl", "rd2_t5_brng_angl", is_r2)
+        t5_int_ang  = pick_col("t5_intsct_angl", "rd2_t5_intsct_angl", is_r2)
+
+        actual_offset = _to_num(member_data.get(t5_bearing))
+        intersect_angle = _to_num(member_data.get(t5_int_ang))
+
+        ideal_relative = -25
+        ideal_bearing = 270 - ideal_relative
+        actual_bearing = 270 - actual_offset if pd.notna(actual_offset) else np.nan
+
+        compare_offset = _to_num(group_data_base.get(t5_bearing)).mean()
+        compare_bearing = 270 - compare_offset if pd.notna(compare_offset) else np.nan
+
+        arrow_length = 3
+        fig_triangle, ax = plt.subplots(figsize=(4, 2.5), dpi=100)
+        ax.set_aspect('equal')
+        ax.set_xlim(-1, 5)
+        ax.set_ylim(-1, 5)
+        ax.axis('off')
+        ax.set_facecolor("#0067A5")
+
+        ax.plot([3, 3], [0, 3], color='black', linewidth=2)
+        ax.plot([0, 3], [3, 3], color='black', linewidth=2)
+
+        for angle, color in zip([ideal_bearing, compare_bearing, actual_bearing], ['#0067A5', '#00A86B', '#F04923']):
+            if pd.isna(angle):
+                continue
+            dx = arrow_length * np.cos(np.radians(angle))
+            dy = arrow_length * np.sin(np.radians(angle))
+            ax.arrow(0, 3, dx, dy, head_width=0.15, color=color, linewidth=2, length_includes_head=True)
+
+        ax.plot([], [], color='#0067A5', label='Ideal')
+        ax.plot([], [], color='#F04923', label='You')
+        ax.plot([], [], color='#00A86B', label='Compare')
+
+        legend = ax.legend(loc='center left', bbox_to_anchor=(1.05, 0.5), frameon=False)
+        for text_ in legend.get_texts():
+            text_.set_color('black')
+
+        st.pyplot(fig_triangle, use_container_width=True)
+
+        def fmt(val, unit="", round_int=False):
+            if pd.isna(val):
+                return "—"
+            return f"{int(round(val))}{unit}" if round_int else f"{val}{unit}"
+
+        summary_df = pd.DataFrame({
+            "Metric": ["Outbound Time", "Return Time", "Bearing Angle", "Intersect Angle"],
+            "You": [
+                fmt(_to_num(member_data.get(t5_time_out)), round_int=True),
+                fmt(_to_num(member_data.get(t5_time_ret)), round_int=True),
+                fmt(actual_offset, "°"),
+                fmt(intersect_angle, "°"),
+            ],
+            "Compare": [
+                fmt(_to_num(group_data_base.get(t5_time_out)).mean(), round_int=True),
+                fmt(_to_num(group_data_base.get(t5_time_ret)).mean(), round_int=True),
+                fmt(compare_offset, "°", round_int=True),
+                fmt(_to_num(group_data_base.get(t5_int_ang)).mean(), "°", round_int=True),
+            ]
+        })
+
+        st.table(summary_df.set_index("Metric"))
+
+    # -----------------------------
+    # Task 6: Turn Direction and Veer
+    # -----------------------------
     with col4:
-        st.markdown(
-            """
-            <div style="
-                background-color: #0067A5;
-                color: white;
-                border: 4px #0067A5;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 20px;
-            ">
-                <h4 style="margin-top: 0; color: white;">Turn Direction and Veer Task</h4>
-                <p style="
-                    font-size:16px;
-                    color:#f0f0f0;
-                    margin-top:-6px;
-                    margin-bottom:10px;
-                    line-height:1.3;
-                    opacity:0.85;
-                ">
-                    Participant asked to travel forward, stop, turn 90 degrees, then continue forward
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
+        is_r2 = blue_header_with_round_toggle(
+            "Turn Direction and Veer Task",
+            "Participant asked to travel forward, stop, turn 90 degrees, then continue forward",
+            key="task6",
+            default_round="Round 1",
         )
-        if fig_veer:
-            st.pyplot(fig_veer, use_container_width=True)
-        if metrics_df is not None:
-            st.table(metrics_df.set_index("Metric"))
 
+        t6_angle = pick_col("t6_brng_angl", "rd2_t6_brng_angl", is_r2)
+        t6_time  = pick_col("t6_tot", "rd2_t6_tot", is_r2)
+
+        bearing_angle = _to_num(member_data.get(t6_angle))
+        task_time = _to_num(member_data.get(t6_time))
+        compare_angle = _to_num(group_data_base.get(t6_angle)).mean()
+
+        fig_veer, ax = plt.subplots(figsize=(4, 2.5), dpi=100)
+        ax.set_aspect('equal')
+        ax.set_xlim(-3, 3)
+        ax.set_ylim(-1, 5)
+        ax.axis('off')
+        ax.set_facecolor("#0067A5")
+
+        arrow_length = 3
+        origin_x, origin_y = -2, 0
+        ax.plot([origin_x + 2, origin_x], [origin_y, origin_y], color='black', linewidth=2)
+
+        for angle, color in zip([0, -compare_angle, -bearing_angle], ['#0067A5', '#00A86B', '#F04923']):
+            if pd.isna(angle):
+                continue
+            dx = arrow_length * np.sin(np.radians(angle))
+            dy = arrow_length * np.cos(np.radians(angle))
+            ax.arrow(origin_x, origin_y, dx, dy, head_width=0.15, color=color, linewidth=2, length_includes_head=True)
+
+        ax.plot([], [], color='#0067A5', label='Ideal')
+        ax.plot([], [], color='#F04923', label='You')
+        ax.plot([], [], color='#00A86B', label='Compare')
+
+        legend = ax.legend(loc='center left', bbox_to_anchor=(1.05, .5), frameon=False)
+        for text_ in legend.get_texts():
+            text_.set_color('black')
+
+        st.pyplot(fig_veer, use_container_width=True)
+
+        metrics_df = pd.DataFrame({
+            "Metric": ["Task Time", "Bearing Angle"],
+            "You": [fmt(task_time, round_int=False), fmt(bearing_angle, "°")],
+            "Compare": [fmt(_to_num(group_data_base.get(t6_time)).mean()), fmt(compare_angle, "°", round_int=True)]
+        })
+        st.table(metrics_df.set_index("Metric"))
+
+    # -----------------------------
+    # NASA Task Load Index (Task 8)
+    # -----------------------------
+    is_r2 = blue_header_with_round_toggle(
+        "NASA Task Load Index",
+        "Self-reported workload ratings (0–100).",
+        key="task8",
+        default_round="Round 1",
+    )
+
+    load_metrics = {
+        "Mental": pick_col("t8_mental", "rd2_t8_mental", is_r2),
+        "Physical": pick_col("t8_physical", "rd2_t8_physical", is_r2),
+        "Temporal": pick_col("t8_temporal", "rd2_t8_temporal", is_r2),
+        "Performance": pick_col("t8_performance", "rd2_t8_performance", is_r2),
+        "Effort": pick_col("t8_effort", "rd2_t8_effort", is_r2),
+        "Frustration": pick_col("t8_frustration", "rd2_t8_frustration", is_r2),
+    }
+
+    ldi_chart_data = []
+    for label, col in load_metrics.items():
+        ldi_chart_data.append({"Metric": label, "Value": _to_num(member_data.get(col)), "Type": "You"})
+        ldi_chart_data.append({"Metric": label, "Value": _to_num(group_data_base.get(col)).mean(), "Type": "Compare"})
+
+    ldi_df = pd.DataFrame(ldi_chart_data)
+
+    ldi_chart = (
+        alt.Chart(ldi_df)
+        .mark_bar()
+        .encode(
+            x=alt.X("Metric:N", title=None, sort=list(load_metrics.keys()), axis=alt.Axis(labelAngle=20)),
+            xOffset=alt.XOffset("Type:N"),
+            y=alt.Y("Value:Q", title="Rating (0–100)"),
+            color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"])),
+            tooltip=("Type", "Value")
+        )
+        .properties(width=500, height=300)
+    )
+
+    st.altair_chart(ldi_chart, use_container_width=True)
 
 
 def plot_score_distribution_kde(group_df, member_val, value_col, label):
@@ -841,46 +880,46 @@ def draw_heatmap_single(member_row, zone_coords, image_path, fill=(255, 0, 0, 10
     return Image.alpha_composite(base_img, overlay)
 
 
+
 def show_search_metrics(df, member_id=None, group_choice=None):
 
     if member_id is None or group_choice is None:
         st.warning("Please select both a member and a comparison group.")
         return
 
-    df = calculate_metrics(df)
-    member_row = df[df['id'] == member_id]
+    # Per-section round toggle
+    is_r2 = blue_header_with_round_toggle(
+        "Search Performance",
+        "Toggle this section to compare Round 1 vs Round 2 search results.",
+        key="search",
+        default_round="Round 1",
+    )
+
+    df_round = add_search_derived(df, is_r2)
+    member_row = df_round[df_round['id'] == member_id]
     if member_row.empty:
         st.warning("No data available for this member.")
         return
+    member_row = member_row.iloc[0]
 
-    group_data = calculate_metrics(get_group_data(df, group_choice))
-    if group_data.empty:
+    group_data_base = get_group_data(df_round, group_choice)
+    if group_data_base.empty:
         st.warning("No comparison group found.")
         return
 
-    member_row = member_row.iloc[0]
+    total_area = pick_total_area(is_r2)
 
-    ## debugger####
-    with st.expander("Debug Round 2", expanded=False):
-        st.write("Round 2 cols present in df:", any(c.startswith("rd2_") for c in df.columns))
-        st.write("Example rd2 columns:", [c for c in df.columns if c.startswith("rd2_")][:10])
-        st.write(
-            "Participant rd2 nonzero zones:",
-            [k for k in ZONE_COORDS_R2.keys()
-            if pd.to_numeric(member_row.get(k, 0), errors="coerce") not in [0, None, np.nan]][:20]
-        )
+    # ---- KPI cards ----
+    searched_beds = int(_to_num(member_row.get("bed_quadrants_searched")))
+    feet_val = _to_num(member_row.get("total_ft"))
+    perc01 = _to_num(member_row.get("total_perc01"))
 
+    feet_display = "—" if pd.isna(feet_val) else f"{round(feet_val):,} ft"
+    percent_display = "—" if pd.isna(perc01) else f"{round(perc01 * 100)}%"
 
-    # Values
-    searched = int(member_row['bed_quadrants_searched'])
-    feet_display = f"{round(member_row['total_ft_searched']):,} ft"
-    percent_display = f"{round(member_row['total_perc_searched'] * 100)}%"
-
-    # Full connected row layout using flexbox
     st.markdown(f"""
     <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
 
-    <!-- Card 1 -->
     <div style="
         flex: 1;
         background-color: #0067A5;
@@ -892,7 +931,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         border: 4px solid #0067A5;
         border-right: none;
     ">
-        <h2 style="margin:0; font-size:50px; color:white; ">{searched}/12</h2>
+        <h2 style="margin:0; font-size:50px; color:white; ">{searched_beds}/12</h2>
         <p style="margin:0; font-size:16px;">Bed Quadrants Searched</p>
         <p style="
             margin:6px 12px 0;
@@ -903,10 +942,8 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         ">
             Each bed was divided into 4 equal parts. You received credit for each quadrant that was adequately searched.
         </p>
-
     </div>
 
-    <!-- Card 2 -->
     <div style="
         flex: 1;
         background-color: #0067A5;
@@ -918,10 +955,9 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         border-right: none;
     ">
         <h2 style="margin:0; font-size:50px; color:white; ">{feet_display}</h2>
-        <p style="margin:0; font-size:16px;">Total Area Searched (Out of 515ft)</p>
+        <p style="margin:0; font-size:16px;">Total Area Searched (Out of {total_area} ft²)</p>
     </div>
 
-    <!-- Card 3 -->
     <div style="
         flex: 1;
         background-color: #0067A5;
@@ -940,33 +976,17 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     </div>
     """, unsafe_allow_html=True)
 
-
-    search = member_row['search_rate']
-    adjusted = member_row['adjusted_score']
-    # weighted = member_row['weighted_score']
-
-
-
-    search_avg = group_data['search_rate'].mean()
-    adjusted_avg = group_data['adjusted_score'].mean()
-    # weighted_avg = group_data['weighted_score'].mean()
-
-    
-    # Get shared x-axis limits for consistent plot sizes
-    xlims = {
-        'search_rate': (group_data['search_rate'].min(), group_data['search_rate'].max()),
-        'adjusted_score': (group_data['adjusted_score'].min(), group_data['adjusted_score'].max()),
-        'weighted_score': (group_data['weighted_score'].min(), group_data['weighted_score'].max())
-    }
+    # ---- Distributions ----
+    search = _to_num(member_row.get("search_rate_sqft_min"))
+    adjusted = _to_num(member_row.get("adjusted_score"))
 
     col1, col2 = st.columns(2)
     with col1:
         bordered_container(
             "Search Rate (sq ft/min)",
-            plot_score_distribution_kde(group_data, search, "search_rate", "Search Rate (sq ft/min)"),
+            plot_score_distribution_kde(group_data_base, search, "search_rate_sqft_min", "Search Rate (sq ft/min)"),
             None
         )
-
 
     with col2:
         st.markdown(
@@ -994,46 +1014,35 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             unsafe_allow_html=True
         )
         st.altair_chart(
-            plot_score_distribution_kde(group_data, adjusted, "adjusted_score", "Adjusted Score"),
+            plot_score_distribution_kde(group_data_base, adjusted, "adjusted_score", "Adjusted Score"),
             use_container_width=True
         )
 
-        # Create a blank figure to pass into the bordered container
-    fig, ax = plt.subplots(figsize=(1, 1))
-    ax.axis("off")  # Hide everything
-
+    # ---- Heatmap (toggle matches section round) ----
     st.markdown(
-    """
-    <div style="
-        background-color: #0067A5;
-        color: white;
-        border: 4px #0067A5;
-        border-radius: 10px;
-        padding: 10px;
-        margin-bottom: 20px;
-    ">
-    <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmaps</h4>
-    """,
-    unsafe_allow_html=True
-)
+        """
+        <div style="
+            background-color: #0067A5;
+            color: white;
+            border: 4px #0067A5;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+        ">
+        <h4 style="margin-top: 0; color: white;">Spatial Recall Task Heatmap</h4>
+        """,
+        unsafe_allow_html=True
+    )
 
-    colA, colB = st.columns([1, 1])
-
-
-    with colA:
-        st.markdown("**Round 1**")
+    if not is_r2:
         first_img, dup_img = draw_heatmaps_split(member_row, image_path=ROUND1_IMG)
-
         if first_img is not None:
             st.image(first_img, caption="Round 1 — areas searched (light red)", use_container_width=True)
         else:
             st.warning("Round 1 floor plan image not found.")
-
         if dup_img is not None:
             st.image(dup_img, caption="Round 1 — duplicated areas (dark red)", use_container_width=True)
-
-    with colB:
-        st.markdown("**Round 2**")
+    else:
         r2_img = draw_heatmap_single(
             member_row,
             ZONE_COORDS_R2,
@@ -1048,101 +1057,36 @@ def show_search_metrics(df, member_id=None, group_choice=None):
     st.markdown("</div>", unsafe_allow_html=True)
 
 
+    # ---- Time to Bed (Round 1 only; Round 2 does not collect these fields) ----
+    if not is_r2:
+        bed_metrics = {
+            "Time to Bed 1": "time_to_b1",
+            "Time to Bed 2": "time_to_b2",
+            "Time to Bed 3": "time_to_b3",
+            "Time Called": "search_called"
+        }
 
+        chart_data = []
+        for label, col in bed_metrics.items():
+            chart_data.append({"Metric": label, "Value": _to_num(member_row.get(col)), "Type": "You"})
+            chart_data.append({"Metric": label, "Value": round(_to_num(group_data_base.get(col)).mean()), "Type": "Compare"})
 
-    # Interactive Bar Chart: Bed Times vs Group Avg
-    bed_metrics = {
-        "Time to Bed 1": "time_to_b1",
-        "Time to Bed 2": "time_to_b2",
-        "Time to Bed 3": "time_to_b3",
-        "Time Called": "search_called"
-    }
+        df_chart = pd.DataFrame(chart_data)
 
-    chart_data = []
-    for label, col in bed_metrics.items():
-        chart_data.append({
-            "Metric": label,
-            "Value": member_row.get(col, np.nan),
-            "Type": "You"
-        })
-        chart_data.append({
-            "Metric": label,
-            "Value": round(group_data[col].mean()),
-            "Type": "Compare"
-        })
-
-    df_chart = pd.DataFrame(chart_data)
-
-    bar_chart = (
-    alt.Chart(df_chart)
-    .mark_bar()
-    .encode(
-        x=alt.X("Metric:N", title=None, axis=alt.Axis(labelAngle=20),sort=["Time to Bed 1", "Time to Bed 2", "Time to Bed 3", "Time Called"],),
-        xOffset=alt.XOffset("Type:N"),
-        y=alt.Y("Value:Q", title="Time (seconds)"),
-        color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"],
-                                          range=["#F04923", "#0067A5"])),
-
-        tooltip=["Type", "Value"]
-    )
-    .properties(
-        width=500,
-        height=300
-    )
-)
-
-
-    # Load Demand Index Comparison
-    load_metrics = {
-        "Mental": "t8_mental",
-        "Physical": "t8_physical",
-        "Temporal": "t8_temporal",
-        "Performance": "t8_performance",
-        "Effort": "t8_effort",
-        "Frustration": "t8_frustration"
-    }
-
-    ldi_chart_data = []
-    for label, col in load_metrics.items():
-        ldi_chart_data.append({
-            "Metric": label,
-            "Value": member_row.get(col, np.nan),
-            "Type": "You"
-        })
-        ldi_chart_data.append({
-            "Metric": label,
-            "Value": round(group_data[col].mean()),
-            "Type": "Compare"
-        })
-
-    ldi_df = pd.DataFrame(ldi_chart_data)
-
-    ldi_chart = (
-        alt.Chart(ldi_df)
-        .mark_bar()
-        .encode(
-            x=alt.X(
-                "Metric:N",
-                title=None,
-                sort=["Mental", "Physical", "Temporal", "Performance", "Effort", "Frustration"],  # Ordered categories
-                axis=alt.Axis(labelAngle=20)
-            ),
-            xOffset=alt.XOffset("Type:N"),
-            y=alt.Y("Value:Q", title="Rating (0–100)"),
-            color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"],
-                                          range=["#F04923", "#0067A5"])),
-
-            tooltip=("Type", "Value")
-
+        bar_chart = (
+            alt.Chart(df_chart)
+            .mark_bar()
+            .encode(
+                x=alt.X("Metric:N", title=None, axis=alt.Axis(labelAngle=20),
+                        sort=["Time to Bed 1", "Time to Bed 2", "Time to Bed 3", "Time Called"]),
+                xOffset=alt.XOffset("Type:N"),
+                y=alt.Y("Value:Q", title="Time (seconds)"),
+                color=alt.Color("Type:N", scale=alt.Scale(domain=["You", "Compare"], range=["#F04923", "#0067A5"])),
+                tooltip=["Type", "Value"]
+            )
+            .properties(width=500, height=300)
         )
-        .properties(
-            width=500,
-            height=300
-        )
-    )
 
-    col1, col2 = st.columns(2)
-    with col1:
         st.markdown(
             """
             <div style="
@@ -1162,8 +1106,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
                     line-height:1.3;
                     opacity:0.85;
                 ">
-                    Times are from start of search to 1st bed located, 2nd bed located, etc., not B1/B2/B3 from map above.
-                    There will be a “time to bed” for each bed touched, even if it was not adequately searched.
+                    Times are from start of search to 1st bed located, 2nd bed located, etc.
                     “Time Called” is from the start of evolution to the time the participant indicated search was complete.
                 </p>
             </div>
@@ -1172,37 +1115,43 @@ def show_search_metrics(df, member_id=None, group_choice=None):
         )
         st.altair_chart(bar_chart, use_container_width=True)
 
-    with col2:
-        bordered_container("NASA Task Load Index", ldi_chart, None)
 
-    
-
+    # ---- Notes (toggle matches section round) ----
     with st.expander("Notes", expanded=True):
         st.markdown("### Notes & Observations")
 
         def checkmark(val):
             return "✅ Yes" if str(val).strip().lower() == "yes" else "❌ No"
 
+        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", is_r2)
+        disoriented_col  = pick_col("disoriented", "rd2_disoriented", is_r2)
+        tool_col         = pick_col("tool", "rd2_tool", is_r2)
+        duplicate_col    = pick_col("duplicate", "rd2_duplicate", is_r2)
+        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", is_r2)
+        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", is_r2)
+        furniture_col    = pick_col("furniture", "rd2_furniture", is_r2)
+        notes_col        = pick_col("add_observations", "rd2_add_observations", is_r2)
+
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.write("**Missed Rooms:**", checkmark(member_row.get("missed_rooms")))
-            st.write("**Disoriented:**", checkmark(member_row.get("disoriented")))
-            st.write("**Swept with Tool:**", checkmark(member_row.get("tool")))
+            st.write("**Missed Rooms:**", checkmark(member_row.get(missed_rooms_col)))
+            st.write("**Disoriented:**", checkmark(member_row.get(disoriented_col)))
+            st.write("**Swept with Tool:**", checkmark(member_row.get(tool_col)))
         with col2:
-            st.write("**Duplicate Rooms:**", checkmark(member_row.get("duplicate")))
-            st.write("**Search Delayed by Object:**", checkmark(member_row.get("delayed_object")))
-            st.write("**PPE/Equip Issues:**", checkmark(member_row.get("equipment_issue")))
+            st.write("**Duplicate Rooms:**", checkmark(member_row.get(duplicate_col)))
+            st.write("**Search Delayed by Object:**", checkmark(member_row.get(delayed_col)))
+            st.write("**PPE/Equip Issues:**", checkmark(member_row.get(equip_col)))
         with col3:
-            st.write("**Flipped/Moved Furniture:**", checkmark(member_row.get("furniture")))
+            st.write("**Flipped/Moved Furniture:**", checkmark(member_row.get(furniture_col)))
 
-        notes = member_row.get('add_observations', "")
+        notes = member_row.get(notes_col, "")
         if notes and str(notes).strip():
             st.markdown("**Additional Observations:**")
             st.write(notes)
 
 
 
-# --- Full Dashboard Page ---
+# --- Full Dashboard Page ---# --- Full Dashboard Page ---
 def show_full_dashboard(df, member_id=None, group_choice=None):
     st.markdown("## Search Performance")
     show_search_metrics(df, member_id=member_id, group_choice=group_choice)
@@ -1231,6 +1180,8 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
 
 
 show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
+
+
 
 
 
