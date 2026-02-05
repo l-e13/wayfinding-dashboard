@@ -153,6 +153,21 @@ global_round = st.segmented_control(
 )
 GLOBAL_IS_R2 = (global_round == "Round 2")
 
+def participated_in_round(df, member_id, is_r2: bool) -> bool:
+    """
+    Returns True if participant has data for the selected round.
+    """
+    row = df[df["id"] == member_id]
+    if row.empty:
+        return False
+
+    row = row.iloc[0]
+
+    # Pick a reliable indicator column per round
+    if is_r2:
+        return pd.notna(row.get("rd2_total_ft_searched"))
+    else:
+        return pd.notna(row.get("total_ft_searched"))
 
 
 def create_arrow_chart_spaced(member_est, compare_avg, actuals):
@@ -1201,6 +1216,36 @@ def show_nasa_tlx(df, member_id=None, group_choice=None, is_r2: bool = False):
  
 # --- Full Dashboard Page ---# --- Full Dashboard Page ---
 def show_full_dashboard(df, member_id=None, group_choice=None, is_r2: bool = False):
+
+
+    if member_id is None or group_choice is None:
+        return
+
+    # 🚨 Round participation guard
+    if not participated_in_round(df, member_id, is_r2):
+        st.markdown("##")
+        st.markdown(
+            """
+            <div style="
+                text-align: center;
+                padding: 80px 20px;
+                background-color: white;
+            ">
+                <h2 style="color:#333;">No data available</h2>
+                <p style="font-size:18px; color:#666; max-width:600px; margin:auto;">
+                    This participant did not participate in
+                    <strong>Round 1</strong>.
+                </p>
+                <p style="font-size:15px; color:#888;">
+                    Please switch to Round 2 to view their results.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        return
+
+
     st.markdown("## Search Performance")
     show_search_metrics(df, member_id=member_id, group_choice=group_choice, is_r2=is_r2)
 
