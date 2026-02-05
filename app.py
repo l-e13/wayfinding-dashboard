@@ -202,6 +202,15 @@ with col2:
     group_choice = st.selectbox("Compare To Group", group_order, key="shared_group")
 
 
+st.sidebar.markdown("### Debug")
+if st.sidebar.checkbox("Show selected member raw row"):
+    row = df[df["id"] == member_id]
+    st.write("Columns present:", list(df.columns))
+    st.write("Row for selected member:")
+    st.dataframe(row.T)
+
+
+
 def create_arrow_chart_spaced(member_est, compare_avg, actuals):
     trials = ["Trial 1", "Trial 2", "Trial 3"]
     group_order = ["ACTUAL", "YOU", "COMPARE"]
