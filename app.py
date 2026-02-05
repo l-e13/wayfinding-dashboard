@@ -24,6 +24,11 @@ def load_sheet(spreadsheet_name: str, worksheet_name: str) -> pd.DataFrame:
     d["id"] = pd.to_numeric(d["id"], errors="coerce").astype("Int64")
     return d
 
+if st.sidebar.button("Refresh data"):
+    st.cache_data.clear()
+    st.rerun()
+
+
 df_r1 = load_sheet("Wayfinding Data", "Raw Data")
 df_r2 = load_sheet("Wayfinding Data", "Round 2")
 
