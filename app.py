@@ -28,7 +28,13 @@ df_r1 = load_sheet("Wayfinding Data", "Raw Data")
 df_r2 = load_sheet("Wayfinding Data", "Round 2")
 
 # Merge into one table: one row per participant id
-df = df_r1.merge(df_r2, on="id", how="left", suffixes=("", "_rd2dup"))
+df = df_r1.merge(
+    df_r2,
+    on="id",
+    how="outer",
+    suffixes=("", "_rd2dup")
+)
+
 
 ROUND1_IMG = "Floor Plan New.jpg"
 ROUND2_IMG = "Round 2 floor plan.png" 
