@@ -24,11 +24,6 @@ def load_sheet(spreadsheet_name: str, worksheet_name: str) -> pd.DataFrame:
     d["id"] = pd.to_numeric(d["id"], errors="coerce").astype("Int64")
     return d
 
-if st.sidebar.button("Refresh data"):
-    st.cache_data.clear()
-    st.rerun()
-
-
 df_r1 = load_sheet("Wayfinding Data", "Raw Data")
 df_r2 = load_sheet("Wayfinding Data", "Round 2")
 
@@ -139,7 +134,7 @@ def add_search_derived(df_in: pd.DataFrame, is_r2: bool) -> pd.DataFrame:
     return df2
 
 
-group_order = ['Overall', 'OIC', 'FF', 'Tech', 'RS-1', 'RS-2', 'RS-3', 'T-6', 'Other Assignment']
+group_order = ['Overall', 'Rescue Squads', 'Control Group','OIC', 'FF', 'Tech', 'RS-1', 'RS-2', 'RS-3', 'T-6', 'Other Assignment']
 col1, col2 = st.columns(2)
 
 with col1:
@@ -537,24 +532,35 @@ def calculate_metrics(df):
     df['percent_beds_searched'] = df['bed_quadrants_searched'] / 12 * 100
     return df
 
-
-
 def get_group_data(df, group_choice):
     group_choice = str(group_choice).strip()
 
     assignments = {"RS-1", "RS-2", "RS-3", "T-6", "Other Assignment"}
+    rescue_squads = {"RS-1", "RS-2", "RS-3"}
     ranks = {"OIC", "FF", "Tech"}
 
     if group_choice == "Overall":
         return df
+    elif group_choice == "Rescue Squads":
+        return df[
+            (df["assignment"].isin(rescue_squads)) |
+            (df["id"] == 47)
+        ]
+    elif group_choice == "Control Group":
+        return df[
+            ~(df["assignment"].isin(rescue_squads)) &
+            (df["id"] != 47)
+        ]
     elif group_choice in assignments:
         if group_choice == "Other Assignment":
-            return df[~df['assignment'].isin(assignments - {"Other Assignment"})]
+            return df[~df["assignment"].isin(assignments - {"Other Assignment"})]
         else:
-            return df[df['assignment'] == group_choice]
+            return df[df["assignment"] == group_choice]
     elif group_choice in ranks:
-        return df[df['rank'] == group_choice]
+        return df[df["rank"] == group_choice]
+
     return pd.DataFrame()
+
 
 
 
