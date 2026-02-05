@@ -52,64 +52,6 @@ st.title("Wayfinding Performance Study Dashboard")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
-def blue_header_with_round_toggle(
-    title: str,
-    subtitle: str | None,
-    key: str,
-    default_round: str = "Round 1",
-):
-    """
-    Renders a blue header block with a per-section round toggle.
-    Returns: is_r2 (bool)
-    """
-    # persist per-section state
-    state_key = f"{key}__round"
-    if state_key not in st.session_state:
-        st.session_state[state_key] = (default_round == "Round 2")
-
-    # Header layout: title/description on left, toggle on right
-    left, right = st.columns([5, 1.5], vertical_alignment="center")
-
-    with left:
-        st.markdown(
-            f"""
-            <div style="
-                background-color: #0067A5;
-                color: white;
-                border: 4px solid #0067A5;
-                border-radius: 10px;
-                padding: 10px;
-                margin-bottom: 10px;
-            ">
-                <h4 style="margin: 0; color: white;">{title}</h4>
-                {f'<p style="margin:6px 0 0; font-size:14px; color:#f0f0f0; opacity:0.85; line-height:1.3;">{subtitle}</p>' if subtitle else ''}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with right:
-        # Make it obvious what toggle means
-        st.caption("Round")
-        is_r2 = st.toggle(
-            "Round 2",
-            value=st.session_state[state_key],
-            key=f"{key}__toggle",
-            help="Toggle this section between Round 1 and Round 2 results."
-        )
-        st.session_state[state_key] = is_r2
-
-    return st.session_state[state_key]
-
-def round_segmented_toggle(key: str, label: str, default_round: str = "Round 1") -> bool:
-    choice = st.segmented_control(
-        label=label,
-        options=["Round 1", "Round 2"],
-        default=default_round,
-        key=f"{key}__seg",
-    )
-    return choice == "Round 2"
-
 
 
 TOTAL_AREA_R1 = 515
@@ -206,13 +148,15 @@ with col1:
 with col2:
     group_choice = st.selectbox("Compare To Group", group_order, key="shared_group")
 
+st.markdown("---")
 
-st.sidebar.markdown("### Debug")
-if st.sidebar.checkbox("Show selected member raw row"):
-    row = df[df["id"] == member_id]
-    st.write("Columns present:", list(df.columns))
-    st.write("Row for selected member:")
-    st.dataframe(row.T)
+global_round = st.segmented_control(
+    label="Round",
+    options=["Round 1", "Round 2"],
+    default="Round 1",
+    key="global_round"
+)
+GLOBAL_IS_R2 = (global_round == "Round 2")
 
 
 
@@ -870,18 +814,11 @@ def draw_heatmap_single(member_row, zone_coords, image_path, fill=(255, 0, 0, 10
 
 
 
-def show_search_metrics(df, member_id=None, group_choice=None):
+def show_search_metrics(df, member_id=None, group_choice=None, is_r2: bool = False):
 
     if member_id is None or group_choice is None:
         st.warning("Please select both a member and a comparison group.")
         return
-
-    # Per-section round toggle
-    is_r2 = round_segmented_toggle(
-    key="search",
-    label="Toggle this section to compare Round 1 vs Round 2 search results.",
-    default_round="Round 1"
-)
 
 
 
@@ -1031,19 +968,11 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             unsafe_allow_html=True
         )
 
-    with right:
-        heatmap_is_r2 = st.segmented_control(
-            label="Round",
-            options=["Round 1", "Round 2"],
-            default=("Round 2" if is_r2 else "Round 1"),
-            key="heatmap__seg",
-        ) == "Round 2"
-
  
     # Heatmap-specific round toggle (independent)
 
 
-    if not heatmap_is_r2:
+    if not is_r2:
         first_img, dup_img = draw_heatmaps_split(member_row, image_path=ROUND1_IMG)
         if first_img is not None:
             st.image(first_img, caption="Round 1 — areas searched (light red)", use_container_width=True)
@@ -1081,14 +1010,14 @@ def show_search_metrics(df, member_id=None, group_choice=None):
             return str(val)  # fallback if it’s something like a comment
 
 
-        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", heatmap_is_r2)
-        disoriented_col  = pick_col("disoriented", "rd2_disoriented", heatmap_is_r2)
-        tool_col         = pick_col("tool", "rd2_tool", heatmap_is_r2)
-        duplicate_col    = pick_col("duplicate", "rd2_duplicate", heatmap_is_r2)
-        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", heatmap_is_r2)
-        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", heatmap_is_r2)
-        furniture_col    = pick_col("furniture", "rd2_furniture", heatmap_is_r2)
-        notes_col        = pick_col("add_observations", "rd2_add_observations", heatmap_is_r2)
+        missed_rooms_col = pick_col("missed_rooms", "rd2_missed_rooms", is_r2)
+        disoriented_col  = pick_col("disoriented", "rd2_disoriented", is_r2)
+        tool_col         = pick_col("tool", "rd2_tool", is_r2)
+        duplicate_col    = pick_col("duplicate", "rd2_duplicate", is_r2)
+        delayed_col      = pick_col("delayed_object", "rd2_delayed_object", is_r2)
+        equip_col        = pick_col("equipment_issue", "rd2_equipment_issue", is_r2)
+        furniture_col    = pick_col("furniture", "rd2_furniture", is_r2)
+        notes_col        = pick_col("add_observations", "rd2_add_observations", is_r2)
 
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -1109,7 +1038,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
 
 
     # ---- Time to Bed (Round 1 only; Round 2 does not collect these fields) ----
-    if not heatmap_is_r2:
+    if not is_r2:
         bed_metrics = {
             "Time to Bed 1": "time_to_b1",
             "Time to Bed 2": "time_to_b2",
@@ -1168,7 +1097,7 @@ def show_search_metrics(df, member_id=None, group_choice=None):
 
 
     
-def show_nasa_tlx(df, member_id=None, group_choice=None):
+def show_nasa_tlx(df, member_id=None, group_choice=None, is_r2: bool = False):
     if member_id is None or group_choice is None:
         st.warning("Please select a member and comparison group.")
         return
@@ -1184,11 +1113,6 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
         st.warning("No comparison group found.")
         return
     
-    is_r2 = round_segmented_toggle(
-    key="nasa",
-    label="Toggle this section to compare Round 1 vs Round 2 NASA Task results.",
-    default_round="Round 1",
-    )
     st.markdown("---")
 
 
@@ -1270,14 +1194,14 @@ def show_nasa_tlx(df, member_id=None, group_choice=None):
 
  
 # --- Full Dashboard Page ---# --- Full Dashboard Page ---
-def show_full_dashboard(df, member_id=None, group_choice=None):
+def show_full_dashboard(df, member_id=None, group_choice=None, is_r2: bool = False):
     st.markdown("## Search Performance")
-    show_search_metrics(df, member_id=member_id, group_choice=group_choice)
+    show_search_metrics(df, member_id=member_id, group_choice=group_choice, is_r2=is_r2)
 
     st.markdown("---")
 
     st.markdown("## NASA Task Load Index")
-    show_nasa_tlx(df, member_id=member_id, group_choice=group_choice)
+    show_nasa_tlx(df, member_id=member_id, group_choice=group_choice, is_r2=is_r2)
 
     st.markdown("---")
 
@@ -1298,11 +1222,7 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
         unsafe_allow_html=True
     )
 
-    task_is_r2 = round_segmented_toggle(
-    key="tasks",
-    label="Toggle this section to compare Round 1 vs Round 2 Task Performance results.",
-    default_round="Round 1",
-)
+
 
     st.markdown("---")
 
@@ -1310,11 +1230,11 @@ def show_full_dashboard(df, member_id=None, group_choice=None):
     df,
     member_id=member_id,
     group_choice=group_choice,
-    is_r2=task_is_r2
+    is_r2=is_r2
 )
 
 
-show_full_dashboard(df, member_id=member_id, group_choice=group_choice)
+show_full_dashboard(df, member_id=member_id, group_choice=group_choice, is_r2=GLOBAL_IS_R2)
 
 
 
