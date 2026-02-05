@@ -1234,11 +1234,11 @@ def show_full_dashboard(df, member_id=None, group_choice=None, is_r2: bool = Fal
             ">
                 <h2 style="color:#333;">No data available</h2>
                 <p style="font-size:18px; color:#666; max-width:600px; margin:auto;">
-                    This participant did not participate in
+                    You did not participate in
                     <strong>{missing_round}</strong>.
                 </p>
                 <p style="font-size:15px; color:#888;">
-                    Please switch to {other_round} to view their results.
+                    Please switch to {other_round} to view your results.
                 </p>
             </div>
             """,
