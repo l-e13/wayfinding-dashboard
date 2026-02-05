@@ -1217,15 +1217,16 @@ def show_nasa_tlx(df, member_id=None, group_choice=None, is_r2: bool = False):
 # --- Full Dashboard Page ---# --- Full Dashboard Page ---
 def show_full_dashboard(df, member_id=None, group_choice=None, is_r2: bool = False):
 
-
     if member_id is None or group_choice is None:
         return
 
     # 🚨 Round participation guard
     if not participated_in_round(df, member_id, is_r2):
-        st.markdown("##")
+        missing_round = "Round 2" if is_r2 else "Round 1"
+        other_round = "Round 1" if is_r2 else "Round 2"
+
         st.markdown(
-            """
+            f"""
             <div style="
                 text-align: center;
                 padding: 80px 20px;
@@ -1233,18 +1234,17 @@ def show_full_dashboard(df, member_id=None, group_choice=None, is_r2: bool = Fal
             ">
                 <h2 style="color:#333;">No data available</h2>
                 <p style="font-size:18px; color:#666; max-width:600px; margin:auto;">
-                    You did not participate in
-                    <strong>Round 1</strong>.
+                    This participant did not participate in
+                    <strong>{missing_round}</strong>.
                 </p>
                 <p style="font-size:15px; color:#888;">
-                    Please switch to Round 2 to view your results.
+                    Please switch to {other_round} to view their results.
                 </p>
             </div>
             """,
             unsafe_allow_html=True
         )
         return
-
 
     st.markdown("## Search Performance")
     show_search_metrics(df, member_id=member_id, group_choice=group_choice, is_r2=is_r2)
@@ -1273,16 +1273,15 @@ def show_full_dashboard(df, member_id=None, group_choice=None, is_r2: bool = Fal
         unsafe_allow_html=True
     )
 
-
-
     st.markdown("---")
 
     show_task_metrics(
-    df,
-    member_id=member_id,
-    group_choice=group_choice,
-    is_r2=is_r2
-)
+        df,
+        member_id=member_id,
+        group_choice=group_choice,
+        is_r2=is_r2
+    )
+
 
 
 show_full_dashboard(df, member_id=member_id, group_choice=group_choice, is_r2=GLOBAL_IS_R2)
