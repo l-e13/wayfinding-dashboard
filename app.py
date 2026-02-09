@@ -694,6 +694,8 @@ ZONE_COORDS_R2 = {
     "rd2_r7_f9":  [(848, 211), (847, 255), (970, 254), (969, 203), (898, 202), (898, 211)],
 }
 
+ZONE_COORDS_R2_DUP = {f"dup_{k}": v for k, v in ZONE_COORDS_R2.items()}
+
 
 def draw_heatmaps_split(member_row, image_path="Floor Plan New.jpg"):
     try:
@@ -1002,18 +1004,39 @@ def show_search_metrics(df, member_id=None, group_choice=None, is_r2: bool = Fal
         if dup_img is not None:
             st.image(dup_img, caption="Round 1 — duplicated areas (dark red)", use_container_width=True)
     else:
+        # Round 2 — areas searched (light red)
         r2_img = draw_heatmap_single(
             member_row,
             ZONE_COORDS_R2,
             image_path=ROUND2_IMG,
             fill=(255, 0, 0, 100)
         )
+
+        # Round 2 — duplicated areas (dark red)
+        r2_dup_img = draw_heatmap_single(
+            member_row,
+            ZONE_COORDS_R2_DUP,
+            image_path=ROUND2_IMG,
+            fill=(139, 0, 0, 160)
+        )
+
         if r2_img is not None:
-            st.image(r2_img, caption="Round 2 — areas searched", use_container_width=True)
+            st.image(r2_img, caption="Round 2 — areas searched (light red)", use_container_width=True)
         else:
             st.warning("Round 2 floor plan image not found.")
 
+        # Only show dup heatmap if there is at least one duplicate zone marked
+        dup_cols = list(ZONE_COORDS_R2_DUP.keys())
+        has_dups = (
+            member_row[dup_cols].apply(pd.to_numeric, errors="coerce").fillna(0).ne(0).any()
+            if all(c in member_row.index for c in dup_cols)
+            else False
+        )
 
+        if has_dups:
+            st.image(r2_dup_img, caption="Round 2 — duplicated areas (dark red)", use_container_width=True)
+        else:
+            st.info("No duplicated areas recorded in Round 2 for this participant.")
 
 
     # ---- Notes (toggle matches section round) ----
