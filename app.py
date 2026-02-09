@@ -47,10 +47,6 @@ st.title("Wayfinding Performance Study Dashboard")
 st.markdown("Use the filters below to compare an individual member to a group average.")
 st.markdown("---")
 
-if st.sidebar.button("Refresh data"):
-    st.cache_data.clear()
-    st.rerun()
-
 
 TOTAL_AREA_R1 = 515
 TOTAL_AREA_R2 = 512.5
