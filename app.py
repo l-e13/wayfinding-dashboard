@@ -63,6 +63,28 @@ def _to_num(x):
     """Coerce values like '482', 482, '482.0' -> float; returns NaN if not parseable."""
     return pd.to_numeric(x, errors="coerce")
 
+def is_marked(val) -> bool:
+    """True if a cell indicates a duplicate (handles 1/0, Yes/No, X, True/False, etc.)."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return False
+
+    # Strings like "Yes", "X", "TRUE", "1"
+    if isinstance(val, str):
+        s = val.strip().lower()
+        if s in {"", "0", "no", "n", "false", "f"}:
+            return False
+        if s in {"yes", "y", "true", "t", "x"}:
+            return True
+
+        # Try numeric strings like "1", "1.0"
+        v = pd.to_numeric(s, errors="coerce")
+        return (pd.notna(v) and v != 0) if pd.notna(v) else True  # any other non-empty string counts as marked
+
+    # Numbers
+    v = pd.to_numeric(val, errors="coerce")
+    return pd.notna(v) and v != 0
+
+
 def _to_pct01(x):
     """Coerce values like '93.66%', 93.66, 0.9366 -> 0-1 float."""
     if pd.isna(x):
@@ -826,7 +848,7 @@ def draw_heatmap_single(member_row, zone_coords, image_path, fill=(255, 0, 0, 10
 
     for col_name, coords in zone_coords.items():
         val = member_row.get(col_name, 0)
-        if pd.notna(val) and val != 0:
+        if is_marked(val):
             if isinstance(coords, tuple):
                 x, y, w, h = coords
                 d.rectangle([x, y, x + w, y + h], fill=fill)
@@ -1003,8 +1025,11 @@ def show_search_metrics(df, member_id=None, group_choice=None, is_r2: bool = Fal
             st.warning("Round 1 floor plan image not found.")
         if dup_img is not None:
             st.image(dup_img, caption="Round 1 — duplicated areas (dark red)", use_container_width=True)
+
     else:
-        # Round 2 — areas searched (light red)
+        # ---------------------------------------
+        # Round 2 — searched areas (light red)
+        # ---------------------------------------
         r2_img = draw_heatmap_single(
             member_row,
             ZONE_COORDS_R2,
@@ -1012,7 +1037,19 @@ def show_search_metrics(df, member_id=None, group_choice=None, is_r2: bool = Fal
             fill=(255, 0, 0, 100)
         )
 
+        if r2_img is not None:
+            st.image(
+                r2_img,
+                caption="Round 2 — areas searched (light red)",
+                use_container_width=True
+            )
+        else:
+            st.warning("Round 2 floor plan image not found.")
+            return
+
+        # ---------------------------------------
         # Round 2 — duplicated areas (dark red)
+        # ---------------------------------------
         r2_dup_img = draw_heatmap_single(
             member_row,
             ZONE_COORDS_R2_DUP,
@@ -1020,21 +1057,27 @@ def show_search_metrics(df, member_id=None, group_choice=None, is_r2: bool = Fal
             fill=(139, 0, 0, 160)
         )
 
-        if r2_img is not None:
-            st.image(r2_img, caption="Round 2 — areas searched (light red)", use_container_width=True)
-        else:
-            st.warning("Round 2 floor plan image not found.")
+        # ---------------------------------------
+        # Check if ANY duplicate exists
+        # ---------------------------------------
+        dup_cols = [c for c in ZONE_COORDS_R2_DUP.keys() if c in member_row.index]
 
-        # Only show dup heatmap if there is at least one duplicate zone marked
-        dup_cols = list(ZONE_COORDS_R2_DUP.keys())
-        has_dups = (
-            member_row[dup_cols].apply(pd.to_numeric, errors="coerce").fillna(0).ne(0).any()
-            if all(c in member_row.index for c in dup_cols)
-            else False
-        )
+        has_dups = False
+        for c in dup_cols:
+            val = member_row.get(c)
+            if is_marked(val):   # uses helper you added
+                has_dups = True
+                break
 
-        if has_dups:
-            st.image(r2_dup_img, caption="Round 2 — duplicated areas (dark red)", use_container_width=True)
+        # ---------------------------------------
+        # Display duplicate heatmap only if needed
+        # ---------------------------------------
+        if has_dups and r2_dup_img is not None:
+            st.image(
+                r2_dup_img,
+                caption="Round 2 — duplicated areas (dark red)",
+                use_container_width=True
+            )
         else:
             st.info("No duplicated areas recorded in Round 2 for this participant.")
 
